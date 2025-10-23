@@ -1,0 +1,72 @@
+<!-- Species Detail Modal Component -->
+<div id="species-modal" class="species-modal">
+    <div class="modal-content">
+        <!-- Close Button -->
+        <button onclick="closeSpeciesModal()" class="modal-close-button" aria-label="Close modal">
+            ×
+        </button>
+        
+        <!-- Modal Header -->
+        <div class="modal-header">
+            <div class="modal-header-content">
+                <div id="species-modal-image" class="modal-species-image">
+                    <!-- Image will be inserted here by JavaScript -->
+                </div>
+                <div class="modal-species-info">
+                    <h2 id="species-modal-name" class="modal-species-name">
+                        Species Name
+                    </h2>
+                    <p id="species-modal-scientific" class="modal-species-scientific">
+                        Scientific name
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="modal-body">
+            <!-- Detection Stats -->
+            <div class="modal-stats-grid">
+                <div class="modal-stat-card">
+                    <div class="modal-stat-label">Total Detections</div>
+                    <div id="species-modal-count" class="modal-stat-value">-</div>
+                </div>
+                <div class="modal-stat-card">
+                    <div class="modal-stat-label">Avg Confidence</div>
+                    <div id="species-modal-confidence" class="modal-stat-value">-</div>
+                </div>
+                <div class="modal-stat-card">
+                    <div class="modal-stat-label">First Heard</div>
+                    <div id="species-modal-first" class="modal-stat-value-small">-</div>
+                </div>
+                <div class="modal-stat-card">
+                    <div class="modal-stat-label">Last Heard</div>
+                    <div id="species-modal-last" class="modal-stat-value-small">-</div>
+                </div>
+            </div>
+            
+            <!-- Additional Info -->
+            <div id="species-modal-info" class="modal-additional-info">
+                <p>Loading species information...</p>
+            </div>
+            
+            <!-- CRITICAL FIX: Additional Info Section -->
+            <div id="modal-additional-info" class="modal-additional-info">
+                <!-- Additional species information will be loaded here by JavaScript -->
+            </div>
+            
+            <!-- Recent Detections -->
+            <div class="modal-recent-detections">
+                <h3>Recent Detections</h3>
+                <div id="species-modal-recent" class="modal-recent-list">
+                    <p style="color: #6b7280;">Loading recent detections...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+            <button onclick="closeSpeciesModal()">Close</button>
+        </div>
+    </div>
+</div>

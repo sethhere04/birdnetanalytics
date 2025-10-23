@@ -1,0 +1,141 @@
+<!-- Analytics Tab Content -->
+
+<!-- Detection Trends -->
+<div class="section">
+    <h2>📈 Detection Trends</h2>
+    
+    <!-- Controls -->
+    <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div>
+            <label style="display: inline-block; font-weight: 500; margin-right: 0.5rem;">Time Period:</label>
+            <select id="trends-timeframe" style="padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 6px;">
+                <option value="daily">Last 30 Days</option>
+                <option value="weekly">Last 12 Weeks</option>
+                <option value="monthly">Last 12 Months</option>
+            </select>
+        </div>
+        <button id="refresh-trends" class="btn btn-primary">
+            🔄 Refresh
+        </button>
+    </div>
+    
+    <!-- Info message -->
+    <div id="trends-info" class="info-box info-box-success">
+        Loading detection trends...
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Peak Activity</div>
+            <div id="peak-activity-stat" style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">--</div>
+        </div>
+        <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Average</div>
+            <div id="avg-daily-stat" style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">--</div>
+        </div>
+        <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Total</div>
+            <div id="total-period-stat" style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">--</div>
+        </div>
+        <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Trend</div>
+            <div id="trend-direction-stat" style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">--</div>
+        </div>
+    </div>
+    
+    <!-- Chart -->
+    <div class="chart-container">
+        <canvas id="detection-trends-chart"></canvas>
+    </div>
+</div>
+
+<!-- Population Trends - CRITICAL FIX -->
+<div class="section">
+    <h2>📈 Population Trends</h2>
+    
+    <!-- Population Trends Info -->
+    <div id="population-trends-info" class="info-box info-box-info">
+        📊 Loading population trends data...
+    </div>
+    
+    <!-- Population Chart Container -->
+    <div class="chart-container">
+        <canvas id="population-chart"></canvas>
+    </div>
+</div>
+
+<!-- Migration Patterns -->
+<div class="section">
+    <h2>🦆 Migration Patterns</h2>
+    <div id="migration-summary" style="margin-bottom: 1rem; font-weight: 500;">
+        Analyzing migration patterns from your detections...
+    </div>
+    <div id="migration-info" class="info-box info-box-info">
+        Loading migration data...
+    </div>
+    <div style="overflow-x: auto;">
+        <table id="migration-table" style="width: 100%; border-collapse: collapse; background: white;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Species</th>
+                    <th style="text-align: left; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">First Seen</th>
+                    <th style="text-align: left; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Last Seen</th>
+                    <th style="text-align: left; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Days Present</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="4" class="loading-placeholder">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Rarity Analysis -->
+<div class="section">
+    <h2>💎 Rarity Analysis</h2>
+    <div id="rarity-info" class="info-box info-box-warning">
+        Calculating rarity scores based on detection frequency...
+    </div>
+    <div style="overflow-x: auto;">
+        <table id="rarity-table" style="width: 100%; border-collapse: collapse; background: white;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Species</th>
+                    <th style="text-align: center; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Rarity Score</th>
+                    <th style="text-align: center; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Category</th>
+                    <th style="text-align: center; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Detections</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="4" class="loading-placeholder">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Conservation Status -->
+<div class="section">
+    <h2>🌿 Conservation Alerts</h2>
+    
+    <!-- Summary -->
+    <div id="conservation-summary" style="margin-bottom: 1rem; padding: 1rem; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #10b981;">
+        <strong>Loading conservation status...</strong>
+    </div>
+    
+    <!-- Info -->
+    <div id="conservation-info" style="margin-bottom: 1rem; font-size: 0.875rem; color: #6b7280;">
+        Analyzing population trends based on your detection data...
+    </div>
+    
+    <!-- Alerts Container -->
+    <div id="conservation-alerts" style="margin-top: 1rem;">
+        <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-description">Analyzing species conservation status...</div>
+        </div>
+    </div>
+    
+    <!-- Breakdown -->
+    <div id="conservation-breakdown" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;"></div>
+</div>

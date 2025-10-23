@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BirdNET-Go Advanced Analytics Dashboard</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Core Initialization Scripts (Keep inline for early initialization) -->
+    <script>
+        // Initialize global charts object
+        window.charts = {};
+        console.log('✅ Global charts object initialized');
+        
+        // Chart.js auto-destroy wrapper
+        (function() {
+            if (typeof Chart === 'undefined') return;
+            const OriginalChart = Chart;
+            window.Chart = function(ctx, config) {
+                const canvas = ctx.canvas || ctx;
+                const existingChart = Chart.getChart(canvas);
+                if (existingChart) {
+                    console.log('🔄 Destroying existing chart');
+                    existingChart.destroy();
+                }
+                return new OriginalChart(ctx, config);
+            };
+            Object.setPrototypeOf(window.Chart, OriginalChart);
+            for (let key in OriginalChart) {
+                if (OriginalChart.hasOwnProperty(key)) {
+                    window.Chart[key] = OriginalChart[key];
+                }
+            }
+            console.log('✅ Chart.js wrapper installed');
+        })();
+    </script>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/tabs.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <h1>🦜 BirdNET-Go Analytics Dashboard</h1>
+        
+        <!-- System Status -->
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2>System Status</h2>
+                    <div id="system-status" style="color: #6b7280; font-size: 0.875rem;">Initializing...</div>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button onclick="BirdNET.settingsManager && BirdNET.settingsManager.show()" class="btn btn-secondary">⚙️ Settings</button>
+                    <button onclick="refreshAllData()" class="btn btn-primary">🔄 Refresh All Data</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dashboard Metrics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-species">-</div>
+                <div class="stat-label">Total Species</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-detections">-</div>
+                <div class="stat-label">Total Detections</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-confidence">-</div>
+                <div class="stat-label">Avg Confidence</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="active-today">-</div>
+                <div class="stat-label">Active Today</div>
+            </div>
+        </div>
+        
+        <!-- Newest Species -->
+        <div class="section">
+            <h2>🆕 Newest Species Detected</h2>
+            <div id="newest-species">
+                <div class="loading-placeholder">Loading...</div>
+            </div>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('overview')">📊 Overview</button>
+            <button class="tab-button" onclick="switchTab('species')">🦜 Species</button>
+            <button class="tab-button" onclick="switchTab('analytics')">📈 Analytics</button>
+            <button class="tab-button" onclick="switchTab('migration')">🦅 Migration</button>
+            <button class="tab-button" onclick="switchTab('feeding')">🌰 Feeding</button>
+            <button class="tab-button" onclick="switchTab('live')">⚡ Live<span class="tab-badge" id="live-badge" style="display: none;">●</span></button>
+        </div>
+        
+        <!-- Tab Content Container -->
+        <div id="tabs-container">
+            <!-- TAB 1: Overview (inline for fast initial load) -->
+            <div id="tab-overview" class="tab-content active">
+                <div class="section">
+                    <h2>Data Filters</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Date Range</label>
+                            <select id="date-filter" style="width: 100%; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 6px;">
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
+                                <option value="week">Last 7 Days</option>
+                                <option value="month">Last 30 Days</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Confidence Threshold</label>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="range" id="confidence-slider" min="0" max="1" step="0.05" value="0.1" style="flex: 1;">
+                                <span id="confidence-value" style="min-width: 40px; font-weight: 600;">10%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Sort By</label>
+                            <select id="sort-by" style="width: 100%; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 6px;">
+                                <option value="count">Detection Count</option>
+                                <option value="confidence">Confidence</option>
+                                <option value="name">Species Name</option>
+                                <option value="recent">Most Recent</option>
+                                <option value="first">First Detected</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="filter-info"></div>
+                </div>
+                
+                <div class="section">
+                    <h2>Recent Detections</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div id="recent-detections-info">Loading recent detections...</div>
+                        <button id="refresh-detections" class="btn btn-primary">Refresh</button>
+                    </div>
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <table id="recent-detections-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 250px;">Species</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Confidence</th>
+                                    <th>Status</th>
+                                    <th>Audio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="loading-placeholder">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Other tabs loaded dynamically -->
+            <div id="tab-species" class="tab-content"></div>
+            <div id="tab-analytics" class="tab-content"></div>
+            <div id="tab-migration" class="tab-content"></div>
+            <div id="tab-feeding" class="tab-content"></div>
+            <div id="tab-live" class="tab-content"></div>
+        </div>
+    </div>
+    
+    <!-- Modal Container (loaded dynamically) -->
+    <div id="modal-container"></div>
+    
+    <!-- Load Modal Component -->
+    <script>
+        // Load species modal from component file
+        fetch('components/modal-species.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('modal-container').innerHTML = html;
+                console.log('✅ Modal loaded');
+            })
+            .catch(error => console.error('Error loading modal:', error));
+    </script>
+    
+    <!-- Core JavaScript Modules -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/species.js"></script>
+    <script src="js/detections.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/updates.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/feeding.js"></script>
+    <script src="js/gallery.js"></script>
+    
+    <!-- Advanced Feature Modules -->
+    <script src="js/ai-migration-config.js"></script>
+    <script src="js/migration-prediction.js"></script>
+    <script src="js/migration-map.js"></script>
+    <script src="js/dynamic-migration.js"></script>
+    <script src="js/personal-migration.js"></script>
+    <script src="js/detection-trends.js"></script>
+    <script src="js/real-feeding.js"></script>
+    <script src="js/real-analytics.js"></script>
+    <script src="js/population-trends.js"></script>
+    
+    <!-- Modal and Tab Handlers (NEW) -->
+    <script src="js/modal-handlers.js"></script>
+    <script src="js/tab-loader.js"></script>
+    
+    <!-- Initialization -->
+    <script src="js/init.js"></script>
+    
+    <!-- Global Helper Functions -->
+    <script>
+        console.log('✅ All modules loaded');
+        
+        // Global refresh function
+        function refreshAllData() {
+            if (BirdNET.updates && BirdNET.updates.refreshAll) {
+                BirdNET.updates.refreshAll();
+            } else {
+                console.error('Refresh function not available');
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
