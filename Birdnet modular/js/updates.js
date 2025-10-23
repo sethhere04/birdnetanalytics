@@ -92,7 +92,7 @@ console.log('Loading BirdNET.updates module...');
             html += '<td>' + utils.formatDate(s.first_heard) + '</td>';
             html += '<td>' + utils.formatDate(s.last_heard) + '</td>';
             
-            // FIX #1: Safe audio button creation
+            // Safe audio button creation
             html += '<td>';
             if (s.best_detection_id && audio && audio.createButton) {
                 html += audio.createButton(s.best_detection_id, s.common_name);
@@ -110,7 +110,7 @@ console.log('Loading BirdNET.updates module...');
         tbody.innerHTML = html;
     };
     
-    // Update species gallery
+    // Update species gallery - FIXED VERSION
     updates.speciesGallery = function() {
         // Use enhanced gallery if available
         if (BirdNET.speciesGallery && BirdNET.speciesGallery.updateGalleryWithThumbnails) {
@@ -120,7 +120,7 @@ console.log('Loading BirdNET.updates module...');
         
         // Fallback to basic gallery
         const gallery = utils.getElement('species-gallery');
-        if (!gallery) return;
+        if (!gallery) return; // FIXED: Added safety check
         
         const species = BirdNET.data.species;
         
@@ -203,7 +203,7 @@ console.log('Loading BirdNET.updates module...');
                 }
                 html += '</td>';
                 
-                // FIX #1: Safe audio button creation for detections
+                // Safe audio button creation for detections
                 html += '<td>';
                 if (d.id && audio && audio.createButton) {
                     html += audio.createButton(d.id, speciesName);

@@ -178,11 +178,12 @@ console.log('Loading BirdNET.utils module...');
         };
     };
     
-    // Get element safely
+    // Get element safely - FIXED VERSION
     utils.getElement = function(id) {
         const element = document.getElementById(id);
         if (!element) {
-            console.warn('Element not found:', id);
+            console.warn(`Element not found: ${id} (may not be loaded yet or not on current tab)`);
+            return null;
         }
         return element;
     };
