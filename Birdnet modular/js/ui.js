@@ -1,8 +1,18 @@
 // UI Module
 console.log('Loading BirdNET.ui module...');
 
-(function() {
+// Use immediate check and fallback with setTimeout if needed
+(function initUIModule() {
     'use strict';
+    
+    // Check if BirdNET is available
+    if (typeof BirdNET === 'undefined') {
+        console.warn('⚠️ BirdNET not ready yet, retrying in 10ms...');
+        setTimeout(initUIModule, 10);
+        return;
+    }
+    
+    console.log('✅ BirdNET found, initializing UI module...');
     
     // Get references to BirdNET namespaces
     const ui = BirdNET.ui;

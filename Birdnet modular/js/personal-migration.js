@@ -277,7 +277,7 @@ async function fetchHistoricalDetectionsForMigration() {
 async function updatePersonalMigrationCalendar() {
     console.log('Updating personal migration calendar...');
     
-    const container = document.getElementById('personal-migration-calendar');
+    const container = document.getElementById('personal-migration-content');
     if (!container) {
         console.warn('Personal migration calendar container not found');
         return;

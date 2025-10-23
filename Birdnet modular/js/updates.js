@@ -133,7 +133,15 @@ console.log('Loading BirdNET.updates module...');
         species.forEach(function(s) {
             html += '<div class="species-card" onclick="BirdNET.ui.openSpeciesModal(\'' + 
                     utils.sanitizeHTML(s.common_name) + '\')">';
-            html += '<div class="species-card-placeholder">🦜</div>';
+            
+            // Display thumbnail if available, otherwise show placeholder
+            if (s.thumbnail_url) {
+                html += '<img src="' + utils.sanitizeHTML(s.thumbnail_url) + '" alt="' + utils.sanitizeHTML(s.common_name) + '" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">';
+                html += '<div class="species-card-placeholder" style="display: none;">🦜</div>';
+            } else {
+                html += '<div class="species-card-placeholder">🦜</div>';
+            }
+            
             html += '<div style="padding: 0.5rem 0;">';
             html += '<strong style="font-size: 0.938rem;">' + utils.sanitizeHTML(s.common_name || 'Unknown') + '</strong>';
             html += '<div class="scientific-name">' + utils.sanitizeHTML(s.scientific_name || '') + '</div>';
@@ -183,7 +191,7 @@ console.log('Loading BirdNET.updates module...');
             let html = '';
             recentDetections.forEach(function(d) {
                 const detectionTime = utils.getDetectionTime(d);
-                const speciesName = utils.sanitizeHTML(d.common_name || 'Unknown');
+                const speciesName = utils.sanitizeHTML(d.commonName || d.common_name || 'Unknown');
                 
                 html += '<tr onclick="BirdNET.ui.openSpeciesModal(\'' + speciesName + '\')" style="cursor: pointer;">';
                 html += '<td><strong>' + speciesName + '</strong></td>';

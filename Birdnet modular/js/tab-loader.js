@@ -89,14 +89,14 @@ async function switchTab(tabName) {
         }
         
         window.loadedTabs[tabName] = true;
-        
-        // Trigger tab initialization
-        await initializeTabData(tabName);
     }
     
     // Show the target tab
     targetTab.classList.add('active');
     targetTab.style.display = 'block';
+    
+    // FIXED: Trigger tab initialization EVERY TIME (moved outside the if block)
+    await initializeTabData(tabName);
     
     // Call BirdNET UI loadTabData if available
     if (BirdNET && BirdNET.ui && BirdNET.ui.loadTabData) {
@@ -153,6 +153,14 @@ async function initializeTabData(tabName) {
                 // Initialize feeding recommendations
                 if (BirdNET.feeding && BirdNET.feeding.updateDisplay) {
                     await BirdNET.feeding.updateDisplay();
+                }
+                // Update real feeding recommendations
+                if (typeof updateRealFeedingRecommendations === 'function') {
+                    await updateRealFeedingRecommendations();
+                }
+                // Update species attraction strategies
+                if (typeof updateSpeciesAttractionDisplay === 'function') {
+                    await updateSpeciesAttractionDisplay();
                 }
                 break;
                 
