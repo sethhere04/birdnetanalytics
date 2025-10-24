@@ -213,14 +213,23 @@
     <script src="js/theme-ui.js"></script>
     <script src="js/api.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/audio-player.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/species.js"></script>
     <script src="js/detections.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/live-stream.js"></script>
+    <script src="js/ui-components.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/updates.js"></script>
     <script src="js/analytics.js"></script>
     <script src="js/feeding.js"></script>
     <script src="js/gallery.js"></script>
+    <script src="js/species-info-api.js"></script>
+    <script src="js/enhanced-species-gallery.js"></script>
+    <script src="js/monthly-activity-heatmap.js"></script>
+    <script src="js/monthly-forecast.js"></script>
     
     <!-- Advanced Feature Modules -->
     <script src="js/ai-migration-config.js"></script>
@@ -247,7 +256,7 @@
     <!-- Global Helper Functions -->
     <script>
         console.log('✅ All modules loaded');
-        
+
         // Global refresh function
         function refreshAllData() {
             if (BirdNET.updates && BirdNET.updates.refreshAll) {
@@ -256,6 +265,31 @@
                 console.error('Refresh function not available');
                 location.reload();
             }
+        }
+
+        // Global audio playback function
+        function playAudio(noteId, speciesName) {
+            if (BirdNET && BirdNET.audio && BirdNET.audio.play) {
+                BirdNET.audio.play(noteId, speciesName || 'Bird');
+            } else {
+                console.error('Audio module not loaded');
+            }
+        }
+
+        // Global species modal function
+        function openSpeciesModal(speciesName) {
+            if (BirdNET && BirdNET.ui && BirdNET.ui.openSpeciesModal) {
+                BirdNET.ui.openSpeciesModal(speciesName);
+            } else {
+                console.error('UI module not loaded');
+            }
+        }
+
+        // Global tab switching (defined by tab-loader.js but ensure it exists)
+        if (typeof switchTab === 'undefined') {
+            window.switchTab = function(tabName) {
+                console.warn('Tab loader not ready yet');
+            };
         }
     </script>
 </body>
