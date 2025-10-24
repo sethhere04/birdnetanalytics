@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BirdNET-Go Analytics - Data-Dense Dashboard</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Core Initialization Scripts -->
+    <script>
+        window.charts = {};
+        console.log('✅ Global charts object initialized');
+
+        // Chart.js auto-destroy wrapper
+        (function() {
+            if (typeof Chart === 'undefined') return;
+            const OriginalChart = Chart;
+            window.Chart = function(ctx, config) {
+                const canvas = ctx.canvas || ctx;
+                const existingChart = Chart.getChart(canvas);
+                if (existingChart) {
+                    console.log('🔄 Destroying existing chart');
+                    existingChart.destroy();
+                }
+                return new OriginalChart(ctx, config);
+            };
+            Object.setPrototypeOf(window.Chart, OriginalChart);
+            for (let key in OriginalChart) {
+                if (OriginalChart.hasOwnProperty(key)) {
+                    window.Chart[key] = OriginalChart[key];
+                }
+            }
+            console.log('✅ Chart.js wrapper installed');
+        })();
+    </script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/data-dense.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">🦜</div>
+                <div class="sidebar-brand">
+                    <div class="sidebar-title">BirdNET-Go</div>
+                    <div class="sidebar-subtitle">Analytics</div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" onclick="switchDenseTab('overview')">
+                    <span class="nav-icon">📊</span>
+                    <span>Overview</span>
+                </button>
+                <button class="nav-item" onclick="switchDenseTab('species')">
+                    <span class="nav-icon">🦜</span>
+                    <span>Species</span>
+                </button>
+                <button class="nav-item" onclick="switchDenseTab('analytics')">
+                    <span class="nav-icon">📈</span>
+                    <span>Analytics</span>
+                </button>
+                <button class="nav-item" onclick="switchDenseTab('migration')">
+                    <span class="nav-icon">🦅</span>
+                    <span>Migration</span>
+                </button>
+                <button class="nav-item" onclick="switchDenseTab('feeding')">
+                    <span class="nav-icon">🌰</span>
+                    <span>Feeding</span>
+                </button>
+                <button class="nav-item" onclick="switchDenseTab('live')">
+                    <span class="nav-icon">⚡</span>
+                    <span>Live Stream</span>
+                    <span class="nav-badge" id="live-badge-dense" style="display: none;">●</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="theme-toggle-sidebar" class="btn btn-secondary" onclick="BirdNET.theme && BirdNET.theme.toggle()" title="Toggle Dark Mode">
+                    <span class="theme-icon theme-icon-light">☀️</span>
+                    <span class="theme-icon theme-icon-dark">🌙</span>
+                </button>
+                <button class="btn btn-secondary" onclick="BirdNET.settingsManager && BirdNET.settingsManager.show()" title="Settings">⚙️</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Compact Header with Stats -->
+            <header class="compact-header">
+                <div class="header-stats">
+                    <div class="header-stat">
+                        <div class="header-stat-value" id="dense-total-species">-</div>
+                        <div class="header-stat-label">Species</div>
+                        <div class="header-stat-change positive" id="dense-species-change" style="display: none;">
+                            ↑ <span>+0</span>
+                        </div>
+                    </div>
+                    <div class="header-stat">
+                        <div class="header-stat-value" id="dense-total-detections">-</div>
+                        <div class="header-stat-label">Detections</div>
+                        <div class="header-stat-change positive" id="dense-detections-change" style="display: none;">
+                            ↑ <span>+0</span>
+                        </div>
+                    </div>
+                    <div class="header-stat">
+                        <div class="header-stat-value" id="dense-avg-confidence">-</div>
+                        <div class="header-stat-label">Confidence</div>
+                    </div>
+                    <div class="header-stat">
+                        <div class="header-stat-value" id="dense-active-today">-</div>
+                        <div class="header-stat-label">Active Today</div>
+                    </div>
+                    <div class="header-stat">
+                        <div class="header-stat-value" id="dense-system-status">●</div>
+                        <div class="header-stat-label">Status</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button onclick="refreshAllData()" class="btn btn-primary btn-sm">🔄</button>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Overview Tab -->
+                <div id="dense-tab-overview" class="dense-tab-content active">
+                    <!-- Row 1: Key Metrics with Sparklines -->
+                    <div class="dense-grid">
+                        <div class="grid-col-3">
+                            <div class="widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Species Trend</h3>
+                                    <span class="widget-icon">📊</span>
+                                </div>
+                                <div class="widget-body">
+                                    <div class="stat-widget">
+                                        <div class="stat-widget-value" id="widget-species-count">-</div>
+                                        <div class="stat-widget-label">Unique Species Detected</div>
+                                        <div class="stat-widget-change positive">
+                                            ↑ 12% vs last week
+                                        </div>
+                                    </div>
+                                    <div class="stat-widget-sparkline" id="sparkline-species"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-3">
+                            <div class="widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Detection Rate</h3>
+                                    <span class="widget-icon">📈</span>
+                                </div>
+                                <div class="widget-body">
+                                    <div class="stat-widget">
+                                        <div class="stat-widget-value" id="widget-detection-rate">-</div>
+                                        <div class="stat-widget-label">Detections per Hour</div>
+                                        <div class="stat-widget-change positive">
+                                            ↑ 8% vs last week
+                                        </div>
+                                    </div>
+                                    <div class="stat-widget-sparkline" id="sparkline-detections"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-3">
+                            <div class="widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Quality Score</h3>
+                                    <span class="widget-icon">⭐</span>
+                                </div>
+                                <div class="widget-body">
+                                    <div class="stat-widget">
+                                        <div class="stat-widget-value" id="widget-quality">-</div>
+                                        <div class="stat-widget-label">Average Confidence</div>
+                                        <div class="stat-widget-change positive">
+                                            ↑ 3% vs last week
+                                        </div>
+                                    </div>
+                                    <div class="stat-widget-sparkline" id="sparkline-confidence"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-3">
+                            <div class="widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Activity</h3>
+                                    <span class="widget-icon">⚡</span>
+                                </div>
+                                <div class="widget-body">
+                                    <div class="stat-widget">
+                                        <div class="stat-widget-value" id="widget-activity">-</div>
+                                        <div class="stat-widget-label">Peak Hour Activity</div>
+                                        <div class="stat-widget-change">
+                                            6:00 AM - 8:00 AM
+                                        </div>
+                                    </div>
+                                    <div class="stat-widget-sparkline" id="sparkline-activity"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Charts -->
+                    <div class="dense-grid">
+                        <div class="grid-col-6">
+                            <div class="widget chart-widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Detection Timeline</h3>
+                                    <span class="widget-icon">📊</span>
+                                </div>
+                                <div class="widget-body">
+                                    <canvas id="dense-timeline-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-6">
+                            <div class="widget chart-widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Species Distribution</h3>
+                                    <span class="widget-icon">🥧</span>
+                                </div>
+                                <div class="widget-body">
+                                    <canvas id="dense-species-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Tables and Lists -->
+                    <div class="dense-grid">
+                        <div class="grid-col-4">
+                            <div class="widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Top Species</h3>
+                                    <span class="widget-icon">🏆</span>
+                                </div>
+                                <div class="widget-body" style="max-height: 280px; overflow-y: auto;">
+                                    <table class="widget-table" id="dense-top-species">
+                                        <thead>
+                                            <tr>
+                                                <th>Species</th>
+                                                <th>Count</th>
+                                                <th>Conf</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td colspan="3" class="loading-placeholder">Loading...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-4">
+                            <div class="widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Recent Detections</h3>
+                                    <span class="widget-icon">🔔</span>
+                                </div>
+                                <div class="widget-body" style="max-height: 280px; overflow-y: auto;">
+                                    <div class="compact-list" id="dense-recent-list">
+                                        <div class="loading-placeholder">Loading...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-4">
+                            <div class="widget">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Rare Sightings</h3>
+                                    <span class="widget-icon">💎</span>
+                                </div>
+                                <div class="widget-body" style="max-height: 280px; overflow-y: auto;">
+                                    <div class="compact-list" id="dense-rare-list">
+                                        <div class="loading-placeholder">Loading...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Mini Charts -->
+                    <div class="dense-grid">
+                        <div class="grid-col-3">
+                            <div class="widget chart-widget-small">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Hourly Activity</h3>
+                                    <span class="widget-icon">🕐</span>
+                                </div>
+                                <div class="widget-body">
+                                    <canvas id="dense-hourly-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-3">
+                            <div class="widget chart-widget-small">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Confidence Distribution</h3>
+                                    <span class="widget-icon">📊</span>
+                                </div>
+                                <div class="widget-body">
+                                    <canvas id="dense-confidence-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-3">
+                            <div class="widget chart-widget-small">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Weekly Trend</h3>
+                                    <span class="widget-icon">📈</span>
+                                </div>
+                                <div class="widget-body">
+                                    <canvas id="dense-weekly-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-col-3">
+                            <div class="widget chart-widget-small">
+                                <div class="widget-header">
+                                    <h3 class="widget-title">Monthly Comparison</h3>
+                                    <span class="widget-icon">📅</span>
+                                </div>
+                                <div class="widget-body">
+                                    <canvas id="dense-monthly-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other tabs will be loaded here -->
+                <div id="dense-tab-species" class="dense-tab-content"></div>
+                <div id="dense-tab-analytics" class="dense-tab-content"></div>
+                <div id="dense-tab-migration" class="dense-tab-content"></div>
+                <div id="dense-tab-feeding" class="dense-tab-content"></div>
+                <div id="dense-tab-live" class="dense-tab-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <!-- Load Modal Component -->
+    <script>
+        fetch('components/modal-species.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('modal-container').innerHTML = html;
+                console.log('✅ Modal loaded');
+            })
+            .catch(error => console.error('Error loading modal:', error));
+    </script>
+
+    <!-- Core JavaScript Modules -->
+    <script src="js/config.js"></script>
+    <script src="js/theme-ui.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/audio-player.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/species.js"></script>
+    <script src="js/detections.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/live-stream.js"></script>
+    <script src="js/ui-components.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/updates.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/feeding.js"></script>
+    <script src="js/gallery.js"></script>
+    <script src="js/species-info-api.js"></script>
+    <script src="js/enhanced-species-gallery.js"></script>
+    <script src="js/monthly-activity-heatmap.js"></script>
+    <script src="js/monthly-forecast.js"></script>
+
+    <!-- Advanced Feature Modules -->
+    <script src="js/ai-migration-config.js"></script>
+    <script src="js/migration-prediction.js"></script>
+    <script src="js/migration-map.js"></script>
+    <script src="js/dynamic-migration.js"></script>
+    <script src="js/personal-migration.js"></script>
+    <script src="js/detection-trends.js"></script>
+    <script src="js/real-feeding.js"></script>
+    <script src="js/species-attraction.js"></script>
+    <script src="js/real-analytics.js"></script>
+    <script src="js/population-trends.js"></script>
+
+    <!-- Modal and Tab Handlers -->
+    <script src="js/modal-handlers.js"></script>
+    <script src="js/tab-loader.js"></script>
+
+    <!-- Enhanced Visualizations -->
+    <script src="js/enhanced-visualizations.js"></script>
+
+    <!-- Initialization -->
+    <script src="js/init.js"></script>
+
+    <!-- Dense Dashboard Script -->
+    <script src="js/dense-dashboard.js"></script>
+
+    <!-- Global Helper Functions -->
+    <script>
+        console.log('✅ All modules loaded');
+
+        // Global refresh function
+        function refreshAllData() {
+            if (BirdNET.updates && BirdNET.updates.refreshAll) {
+                BirdNET.updates.refreshAll();
+            } else {
+                console.error('Refresh function not available');
+                location.reload();
+            }
+        }
+
+        // Global audio playback function
+        function playAudio(noteId, speciesName) {
+            if (BirdNET && BirdNET.audio && BirdNET.audio.play) {
+                BirdNET.audio.play(noteId, speciesName || 'Bird');
+            } else {
+                console.error('Audio module not loaded');
+            }
+        }
+
+        // Global species modal function
+        function openSpeciesModal(speciesName) {
+            if (BirdNET && BirdNET.ui && BirdNET.ui.openSpeciesModal) {
+                BirdNET.ui.openSpeciesModal(speciesName);
+            } else {
+                console.error('UI module not loaded');
+            }
+        }
+
+        // Dense tab switching
+        function switchDenseTab(tabName) {
+            console.log('Switching to dense tab:', tabName);
+
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item').classList.add('active');
+
+            // Hide all tabs
+            document.querySelectorAll('.dense-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.display = 'none';
+            });
+
+            // Show selected tab
+            const targetTab = document.getElementById('dense-tab-' + tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+                targetTab.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
