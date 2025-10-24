@@ -36,18 +36,22 @@
             // Get recent detection data for sparklines
             if (!window.BirdNET || !window.BirdNET.api) return;
 
-            window.BirdNET.api.getDetections()
-                .then(detections => {
-                    if (!detections || detections.length === 0) return;
+            const detections = window.BirdNET.api.getDetections();
+            if (!detections || detections.length === 0) {
+                console.log('No detections available for sparklines yet');
+                return;
+            }
 
-                    // Calculate daily counts for last 7 days
-                    const dailyCounts = this.calculateDailyCounts(detections, 7);
+            try {
+                // Calculate daily counts for last 7 days
+                const dailyCounts = this.calculateDailyCounts(detections, 7);
 
-                    // Add sparkline to each stat card
-                    this.addSparklineToStatCard('total-species', dailyCounts.species);
-                    this.addSparklineToStatCard('total-detections', dailyCounts.detections);
-                })
-                .catch(err => console.error('Error adding sparklines:', err));
+                // Add sparkline to each stat card
+                this.addSparklineToStatCard('total-species', dailyCounts.species);
+                this.addSparklineToStatCard('total-detections', dailyCounts.detections);
+            } catch (err) {
+                console.error('Error adding sparklines:', err);
+            }
         },
 
         calculateDailyCounts(detections, days) {
@@ -166,32 +170,36 @@
         updateConfidenceMetrics() {
             if (!window.BirdNET || !window.BirdNET.api) return;
 
-            window.BirdNET.api.getDetections()
-                .then(detections => {
-                    if (!detections || detections.length === 0) return;
+            const detections = window.BirdNET.api.getDetections();
+            if (!detections || detections.length === 0) {
+                console.log('No detections available for confidence metrics');
+                return;
+            }
 
-                    const total = detections.length;
-                    const high = detections.filter(d => d.confidence >= 0.8).length;
-                    const medium = detections.filter(d => d.confidence >= 0.5 && d.confidence < 0.8).length;
-                    const low = detections.filter(d => d.confidence < 0.5).length;
+            try {
+                const total = detections.length;
+                const high = detections.filter(d => d.confidence >= 0.8).length;
+                const medium = detections.filter(d => d.confidence >= 0.5 && d.confidence < 0.8).length;
+                const low = detections.filter(d => d.confidence < 0.5).length;
 
-                    const highContainer = document.getElementById('radial-high-confidence');
-                    const mediumContainer = document.getElementById('radial-medium-confidence');
-                    const lowContainer = document.getElementById('radial-low-confidence');
+                const highContainer = document.getElementById('radial-high-confidence');
+                const mediumContainer = document.getElementById('radial-medium-confidence');
+                const lowContainer = document.getElementById('radial-low-confidence');
 
-                    if (window.BirdNET.radialProgress) {
-                        if (highContainer) {
-                            window.BirdNET.radialProgress.create(highContainer, high, total, 'High Confidence (≥80%)');
-                        }
-                        if (mediumContainer) {
-                            window.BirdNET.radialProgress.create(mediumContainer, medium, total, 'Medium Confidence (50-79%)');
-                        }
-                        if (lowContainer) {
-                            window.BirdNET.radialProgress.create(lowContainer, low, total, 'Low Confidence (<50%)');
-                        }
+                if (window.BirdNET.radialProgress) {
+                    if (highContainer) {
+                        window.BirdNET.radialProgress.create(highContainer, high, total, 'High Confidence (≥80%)');
                     }
-                })
-                .catch(err => console.error('Error updating confidence metrics:', err));
+                    if (mediumContainer) {
+                        window.BirdNET.radialProgress.create(mediumContainer, medium, total, 'Medium Confidence (50-79%)');
+                    }
+                    if (lowContainer) {
+                        window.BirdNET.radialProgress.create(lowContainer, low, total, 'Low Confidence (<50%)');
+                    }
+                }
+            } catch (err) {
+                console.error('Error updating confidence metrics:', err);
+            }
         },
 
         // Enhance loading states with skeleton screens

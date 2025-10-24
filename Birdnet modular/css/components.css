@@ -37,10 +37,11 @@
 .alert-item {
     padding: 1rem;
     border-radius: 8px;
-    border-left: 4px solid #6b7280;
+    border-left: 4px solid var(--text-secondary);
     margin-bottom: 0.75rem;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow);
+    transition: background-color 0.3s ease;
 }
 
 .alert-conservation {
