@@ -88,7 +88,13 @@ console.log('Loading BirdNET.api module...');
             return [];
         }
     };
-    
+
+    // Alias for fetchDetections with higher limit - for analytics/comprehensive data loading
+    api.fetchAllDetections = async function(limit = 5000) {
+        console.log('Fetching all detections with limit:', limit);
+        return await api.fetchDetections(limit);
+    };
+
     // Fetch daily detection counts
     api.fetchDailyDetectionCounts = async function() {
         try {
@@ -234,7 +240,15 @@ console.log('Loading BirdNET.api module...');
         cache.speciesInfo[cacheKey] = speciesInfo;
         return speciesInfo;
     };
-    
+
+    // Alias for backward compatibility
+    api.fetchSpeciesInfo = api.getSpeciesInfo;
+
+    // Helper to get detections for enhanced visualizations
+    api.getDetections = function() {
+        return BirdNET.data.detections || [];
+    };
+
     console.log('✅ BirdNET.api module loaded');
     
 })();
