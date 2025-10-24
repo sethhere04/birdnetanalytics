@@ -452,15 +452,27 @@
             }
         }
 
+        // Track loaded tabs
+        window.denseTabsLoaded = {
+            overview: true,  // Already in HTML
+            species: false,
+            analytics: false,
+            migration: false,
+            feeding: false,
+            live: false
+        };
+
         // Dense tab switching
-        function switchDenseTab(tabName) {
-            console.log('Switching to dense tab:', tabName);
+        async function switchDenseTab(tabName) {
+            console.log('🔄 Switching to dense tab:', tabName);
 
             // Update nav items
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
-            event.target.closest('.nav-item').classList.add('active');
+            if (event && event.target) {
+                event.target.closest('.nav-item').classList.add('active');
+            }
 
             // Hide all tabs
             document.querySelectorAll('.dense-tab-content').forEach(tab => {
@@ -468,11 +480,115 @@
                 tab.style.display = 'none';
             });
 
-            // Show selected tab
+            // Get target tab
             const targetTab = document.getElementById('dense-tab-' + tabName);
-            if (targetTab) {
-                targetTab.classList.add('active');
+            if (!targetTab) {
+                console.error('Tab not found:', tabName);
+                return;
+            }
+
+            // Load tab content if not already loaded
+            if (!window.denseTabsLoaded[tabName]) {
+                // Show loading state
+                targetTab.innerHTML = createTabPlaceholder(tabName);
                 targetTab.style.display = 'block';
+
+                try {
+                    console.log('📥 Loading tab content:', tabName);
+                    const response = await fetch(`components/tab-${tabName}.html`);
+
+                    if (response.ok) {
+                        const html = await response.text();
+                        targetTab.innerHTML = html;
+                        window.denseTabsLoaded[tabName] = true;
+                        console.log('✅ Tab content loaded:', tabName);
+                    } else {
+                        console.warn('⚠️ Tab file not found, keeping placeholder');
+                        window.denseTabsLoaded[tabName] = true;
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading tab:', error);
+                    window.denseTabsLoaded[tabName] = true;
+                }
+            }
+
+            // Show the target tab
+            targetTab.classList.add('active');
+            targetTab.style.display = 'block';
+
+            // Initialize tab data
+            await initializeDenseTabData(tabName);
+        }
+
+        // Create placeholder for missing tabs
+        function createTabPlaceholder(tabName) {
+            const titles = {
+                species: '🦜 Species',
+                analytics: '📈 Analytics',
+                migration: '🦅 Migration',
+                feeding: '🌰 Feeding',
+                live: '⚡ Live Stream'
+            };
+
+            return `
+                <div class="tab-loading">
+                    <div class="tab-loading-spinner"></div>
+                    <div class="tab-loading-text">Loading ${titles[tabName] || tabName}...</div>
+                </div>
+            `;
+        }
+
+        // Initialize tab-specific data
+        async function initializeDenseTabData(tabName) {
+            console.log('🎬 Initializing dense tab data:', tabName);
+
+            try {
+                switch(tabName) {
+                    case 'overview':
+                        // Already initialized by DenseDashboard
+                        break;
+
+                    case 'species':
+                        if (BirdNET.species && BirdNET.species.updateSpeciesTable) {
+                            await BirdNET.species.updateSpeciesTable();
+                        }
+                        if (BirdNET.updates && BirdNET.updates.speciesGallery) {
+                            BirdNET.updates.speciesGallery();
+                        }
+                        break;
+
+                    case 'analytics':
+                        if (BirdNET.analytics && BirdNET.analytics.updateTrendsChart) {
+                            await BirdNET.analytics.updateTrendsChart();
+                        }
+                        if (typeof updateAllRealAnalytics === 'function') {
+                            await updateAllRealAnalytics();
+                        }
+                        break;
+
+                    case 'migration':
+                        if (typeof initializeAIMigrationSystem === 'function') {
+                            initializeAIMigrationSystem();
+                        }
+                        if (typeof updatePersonalMigrationCalendar === 'function') {
+                            await updatePersonalMigrationCalendar();
+                        }
+                        break;
+
+                    case 'feeding':
+                        if (typeof updateRealFeedingRecommendations === 'function') {
+                            await updateRealFeedingRecommendations();
+                        }
+                        break;
+
+                    case 'live':
+                        if (BirdNET.liveStream && BirdNET.liveStream.start) {
+                            BirdNET.liveStream.start();
+                        }
+                        break;
+                }
+            } catch (error) {
+                console.error('Error initializing tab:', error);
             }
         }
     </script>
