@@ -81,10 +81,11 @@
 .modal-content {
     max-width: 800px;
     margin: 0 auto;
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
     position: relative;
+    transition: background-color 0.3s ease;
 }
 
 .modal-close-button {
@@ -224,26 +225,28 @@
 
 /* Section Styling */
 .section {
-    background: white;
+    background: var(--bg-secondary);
     padding: 1.5rem;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
     margin-bottom: 2rem;
+    transition: background-color 0.3s ease;
 }
 
 .section h2 {
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 /* Chart Container */
 .chart-container {
-    background: white;
+    background: var(--bg-secondary);
     padding: 1.5rem;
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease;
 }
 
 .chart-container canvas {

@@ -48,10 +48,26 @@
     <link rel="stylesheet" href="css/tabs.css">
 </head>
 <body>
+    <!-- Main Navigation Header -->
+    <nav class="main-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <div class="logo-icon">🦜</div>
+                <div class="logo-text">
+                    <div class="logo-title">BirdNET-Go</div>
+                    <div class="logo-subtitle">Analytics Dashboard</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Dark Mode">
+                    <span class="theme-icon theme-icon-light">☀️</span>
+                    <span class="theme-icon theme-icon-dark">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
-        <!-- Header -->
-        <h1>🦜 BirdNET-Go Analytics Dashboard</h1>
-        
         <!-- System Status -->
         <div class="section">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -194,6 +210,7 @@
     
     <!-- Core JavaScript Modules -->
     <script src="js/config.js"></script>
+    <script src="js/theme-ui.js"></script>
     <script src="js/api.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/charts.js"></script>
@@ -220,7 +237,10 @@
     <!-- Modal and Tab Handlers (NEW) -->
     <script src="js/modal-handlers.js"></script>
     <script src="js/tab-loader.js"></script>
-    
+
+    <!-- Enhanced Visualizations -->
+    <script src="js/enhanced-visualizations.js"></script>
+
     <!-- Initialization -->
     <script src="js/init.js"></script>
     
