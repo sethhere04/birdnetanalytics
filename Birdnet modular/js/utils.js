@@ -158,10 +158,11 @@ console.log('Loading BirdNET.utils module...');
         filtered = utils.filterByConfidence(filtered, filters.confidenceThreshold);
         filtered = utils.filterBySearch(filtered, filters.searchTerm);
         filtered = utils.sortSpecies(filtered, filters.sortBy);
-        
+
         // Update the filtered data
         BirdNET.data.species = filtered;
-        
+        BirdNET.data.speciesSummary = filtered.slice();  // Keep alias in sync
+
         return filtered;
     };
     

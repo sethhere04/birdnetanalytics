@@ -153,7 +153,8 @@ console.log('Loading BirdNET.ui module...');
         
         // Update the displayed data
         BirdNET.data.species = filtered;
-        
+        BirdNET.data.speciesSummary = filtered.slice();  // Keep alias in sync
+
         // Refresh the UI components that display species
         if (updates.speciesTable) updates.speciesTable();
         if (updates.speciesGallery) updates.speciesGallery();

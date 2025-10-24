@@ -29,7 +29,8 @@ console.log('Loading BirdNET.api module...');
             // Store in namespace
             BirdNET.data.originalSpecies = data;
             BirdNET.data.species = data.slice();
-            
+            BirdNET.data.speciesSummary = data.slice();  // Alias for backward compatibility
+
             console.log('✅ Fetched ' + data.length + ' species');
             return data;
             
@@ -71,20 +72,23 @@ console.log('Loading BirdNET.api module...');
             if (!data) {
                 console.warn('⚠️ No detections endpoint available. Continuing without detection data.');
                 BirdNET.data.detections = [];
+                BirdNET.data.recentDetections = [];
                 return [];
             }
             
             // Normalize array structure
             const detections = Array.isArray(data) ? data : (data.data || data.detections || []);
-            
+
             BirdNET.data.detections = detections;
-            
+            BirdNET.data.recentDetections = detections.slice();  // Alias for backward compatibility
+
             console.log('✅ Fetched ' + detections.length + ' detections');
             return detections;
             
         } catch (error) {
             console.error('Failed to fetch detections:', error);
             BirdNET.data.detections = [];
+            BirdNET.data.recentDetections = [];
             return [];
         }
     };

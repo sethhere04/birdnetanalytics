@@ -16,8 +16,10 @@ window.BirdNET = window.BirdNET || {
     // Data stores
     data: {
         species: [],
+        speciesSummary: [],  // Alias for backward compatibility
         originalSpecies: [],
         detections: [],
+        recentDetections: [],  // Alias for backward compatibility
         dailyCounts: {}
     },
     

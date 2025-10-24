@@ -275,17 +275,20 @@ console.log('Loading BirdNET.updates module...');
     // Update all UI elements
     updates.all = async function() {
         console.log('🔄 Updating all UI elements...');
-        
+
         updates.systemStatus();
         updates.metrics();
         updates.speciesTable();
         updates.speciesGallery();
         updates.newestSpecies();
         await updates.recentDetections();
-        
+
         console.log('✅ UI update complete');
     };
-    
+
+    // Alias for backward compatibility
+    updates.refreshAll = updates.all;
+
     console.log('✅ BirdNET.updates module loaded');
     
 })();
