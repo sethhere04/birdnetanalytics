@@ -8,8 +8,7 @@ const BirdAnalytics = {
     config: {
         apiBase: 'http://192.168.68.129:8080/api/v2',
         refreshInterval: 60000, // 1 minute
-        detectionLimit: 10000,
-        useWikipediaImages: true
+        detectionLimit: 10000
     },
 
     // Data storage
@@ -154,31 +153,22 @@ const BirdAnalytics = {
     },
 
     /**
-     * Load species thumbnail images from Wikipedia
+     * Load species thumbnail images from species endpoint
      */
     async loadSpeciesImages() {
-        const species = this.data.analytics?.topSpecies || [];
+        const species = this.data.species || [];
 
-        for (const sp of species.slice(0, 20)) {
-            if (this.data.speciesImages[sp.name]) continue;
+        // Load thumbnails from species endpoint's thumbnail_url field
+        for (const sp of species) {
+            const speciesName = sp.commonName || sp.common_name || sp.scientificName || 'Unknown';
 
-            try {
-                const searchName = sp.name.replace(' ', '_');
-                const response = await fetch(
-                    `https://en.wikipedia.org/api/rest_v1/page/summary/${searchName}`
-                );
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.thumbnail) {
-                        this.data.speciesImages[sp.name] = data.thumbnail.source;
-                        console.log(`✅ Loaded image for ${sp.name}`);
-                    }
-                }
-            } catch (error) {
-                console.warn(`No image found for ${sp.name}`);
+            if (sp.thumbnail_url) {
+                this.data.speciesImages[speciesName] = sp.thumbnail_url;
+                console.log(`✅ Loaded thumbnail for ${speciesName}`);
             }
         }
+
+        console.log(`📸 Loaded ${Object.keys(this.data.speciesImages).length} species thumbnails from API`);
 
         // Refresh species displays with images
         this.renderOverview();
@@ -1057,14 +1047,7 @@ const BirdAnalytics = {
             data: {
                 labels: daily.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
                 datasets: [{
-                    label: 'Detections',
-                    data: daily.map(d => d.count),
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }, {
-                    label: 'Unique Species',
+                    label: 'Unique Species Per Day',
                     data: daily.map(d => d.speciesCount),
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
