@@ -48,14 +48,23 @@ const MigrationAI = {
 
         detections.forEach(detection => {
             try {
-                const species = detection.comName || detection.scientificName || detection.commonName || detection.species || 'Unknown';
+                // Try multiple field names for species (different API versions)
+                const species = detection.common_name ||
+                               detection.commonName ||
+                               detection.comName ||
+                               detection.scientificName ||
+                               detection.scientific_name ||
+                               detection.species ||
+                               'Unknown';
 
-                // Parse date from various formats
+                // Parse date from various formats (different API versions)
                 let date;
-                if (detection.date) {
-                    date = new Date(detection.date);
+                if (detection.begin_time) {
+                    date = new Date(detection.begin_time);
                 } else if (detection.timestamp) {
                     date = new Date(detection.timestamp);
+                } else if (detection.date) {
+                    date = new Date(detection.date);
                 } else if (detection.DateTime) {
                     date = new Date(detection.DateTime);
                 } else {
