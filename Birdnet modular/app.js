@@ -176,7 +176,7 @@ const BirdAnalytics = {
         const speciesData = {};
 
         detections.forEach(d => {
-            const species = d.common_name || d.scientificName || 'Unknown';
+            const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
             const date = new Date(d.begin_time || d.timestamp || d.date);
 
             if (!speciesData[species]) {
@@ -391,7 +391,7 @@ const BirdAnalytics = {
 
         return {
             // Basic stats
-            totalSpecies: new Set(detections.map(d => d.common_name || d.scientificName)).size,
+            totalSpecies: new Set(detections.map(d => d.commonName || d.common_name || d.scientificName)).size,
             totalDetections: detections.length,
             filteredDetections: filteredDetections.length,
 
@@ -449,7 +449,7 @@ const BirdAnalytics = {
         if (this.filters.speciesFilter) {
             const search = this.filters.speciesFilter.toLowerCase();
             filtered = filtered.filter(d => {
-                const name = (d.common_name || d.scientificName || '').toLowerCase();
+                const name = (d.commonName || d.common_name || d.scientificName || '').toLowerCase();
                 return name.includes(search);
             });
         }
@@ -502,7 +502,7 @@ const BirdAnalytics = {
             const key = date.toISOString().split('T')[0];
             if (days[key]) {
                 days[key].count++;
-                days[key].species.add(d.common_name || d.scientificName);
+                days[key].species.add(d.commonName || d.common_name || d.scientificName);
             }
         });
 
@@ -551,7 +551,7 @@ const BirdAnalytics = {
         const speciesCounts = {};
 
         detections.forEach(d => {
-            const species = d.common_name || d.scientificName || 'Unknown';
+            const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
             if (!speciesCounts[species]) {
                 speciesCounts[species] = {
                     name: species,
@@ -615,7 +615,7 @@ const BirdAnalytics = {
             return date >= today;
         });
 
-        const species = new Set(todayDetections.map(d => d.common_name || d.scientificName));
+        const species = new Set(todayDetections.map(d => d.commonName || d.common_name || d.scientificName));
 
         return {
             count: todayDetections.length,
@@ -684,7 +684,7 @@ const BirdAnalytics = {
         }
 
         // Species diversity
-        const uniqueSpecies = new Set(detections.map(d => d.common_name || d.scientificName)).size;
+        const uniqueSpecies = new Set(detections.map(d => d.commonName || d.common_name || d.scientificName)).size;
         insights.push({
             type: 'diversity',
             icon: '🌈',
@@ -1158,7 +1158,7 @@ const BirdAnalytics = {
         container.innerHTML = recent.slice(0, 20).map(d => {
             const time = d.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             const date = d.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const species = d.common_name || d.scientificName || 'Unknown';
+            const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
             const confidence = ((d.confidence || 0) * 100).toFixed(1);
 
             return `
