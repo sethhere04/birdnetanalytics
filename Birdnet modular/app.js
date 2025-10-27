@@ -122,35 +122,98 @@ const BirdAnalytics = {
     },
 
     /**
-     * Fetch detections from API
+     * Fetch detections from API with pagination
      */
     async fetchDetections() {
         try {
             const endpoints = [
-                `/detections?limit=${this.config.detectionLimit}`,
-                `/notes?limit=${this.config.detectionLimit}&offset=0`
+                '/detections',
+                '/notes'
             ];
 
+            // Try each endpoint
             for (const endpoint of endpoints) {
                 try {
-                    const response = await fetch(`${this.config.apiBase}${endpoint}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        const detections = Array.isArray(data) ? data : (data.data || []);
-                        console.log(`✅ Found ${detections.length} detections from ${endpoint}`);
+                    console.log(`📡 Trying endpoint: ${endpoint}`);
+                    const detections = await this.fetchAllDetectionsPaginated(endpoint);
+
+                    if (detections.length > 0) {
+                        console.log(`✅ Successfully loaded ${detections.length} total detections from ${endpoint}`);
                         return detections;
                     }
                 } catch (e) {
+                    console.warn(`❌ Endpoint ${endpoint} failed:`, e.message);
                     continue;
                 }
             }
 
-            console.warn('No detections endpoint available');
+            console.warn('⚠️ No detections endpoint available');
             return [];
         } catch (error) {
-            console.error('Failed to fetch detections:', error);
+            console.error('❌ Failed to fetch detections:', error);
             return [];
         }
+    },
+
+    /**
+     * Fetch all detections using pagination
+     */
+    async fetchAllDetectionsPaginated(endpoint) {
+        const batchSize = 1000;
+        let offset = 0;
+        let allDetections = [];
+        let consecutiveEmpty = 0;
+
+        while (true) {
+            try {
+                const url = `${this.config.apiBase}${endpoint}?limit=${batchSize}&offset=${offset}`;
+                console.log(`  📥 Fetching batch: offset=${offset}, limit=${batchSize}`);
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    console.warn(`  ⚠️ HTTP ${response.status} - stopping pagination`);
+                    break;
+                }
+
+                const data = await response.json();
+                const detections = Array.isArray(data) ? data : (data.data || []);
+
+                if (detections.length === 0) {
+                    consecutiveEmpty++;
+                    if (consecutiveEmpty >= 2) {
+                        console.log(`  ✓ No more records found`);
+                        break;
+                    }
+                    offset += batchSize;
+                    continue;
+                }
+
+                consecutiveEmpty = 0;
+                allDetections.push(...detections);
+                console.log(`  ✓ Loaded ${detections.length} records (total: ${allDetections.length})`);
+
+                // If we got fewer records than requested, we've reached the end
+                if (detections.length < batchSize) {
+                    console.log(`  ✓ Reached end of data`);
+                    break;
+                }
+
+                offset += batchSize;
+
+                // Safety limit to prevent infinite loops
+                if (allDetections.length >= 100000) {
+                    console.warn(`  ⚠️ Reached safety limit of 100,000 records`);
+                    break;
+                }
+
+            } catch (error) {
+                console.error(`  ❌ Error fetching batch at offset ${offset}:`, error);
+                break;
+            }
+        }
+
+        return allDetections;
     },
 
     /**
