@@ -47,14 +47,39 @@ const MigrationAI = {
         const grouped = {};
 
         detections.forEach(detection => {
-            const species = detection.comName || detection.scientificName || 'Unknown';
-            if (!grouped[species]) {
-                grouped[species] = [];
+            try {
+                const species = detection.comName || detection.scientificName || detection.commonName || detection.species || 'Unknown';
+
+                // Parse date from various formats
+                let date;
+                if (detection.date) {
+                    date = new Date(detection.date);
+                } else if (detection.timestamp) {
+                    date = new Date(detection.timestamp);
+                } else if (detection.DateTime) {
+                    date = new Date(detection.DateTime);
+                } else {
+                    // Skip detections without dates
+                    return;
+                }
+
+                // Validate date
+                if (isNaN(date.getTime())) {
+                    console.warn('Invalid date for detection:', detection);
+                    return;
+                }
+
+                if (!grouped[species]) {
+                    grouped[species] = [];
+                }
+
+                grouped[species].push({
+                    date: date,
+                    confidence: parseFloat(detection.confidence || detection.Confidence || 0)
+                });
+            } catch (error) {
+                console.warn('Error processing detection:', detection, error);
             }
-            grouped[species].push({
-                date: new Date(detection.date || detection.timestamp),
-                confidence: detection.confidence || 0
-            });
         });
 
         return grouped;

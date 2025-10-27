@@ -334,10 +334,24 @@
 <script>
 // Initialize migration tab when loaded
 (async function() {
+    console.log('🦅 Migration tab script starting...');
+
+    // Check dependencies
     if (typeof MigrationAI === 'undefined') {
-        console.error('MigrationAI module not loaded');
+        console.error('❌ MigrationAI module not loaded');
+        document.getElementById('migration-loading').innerHTML =
+            '<div style="color: var(--error-color); text-align: center; padding: 2rem;"><p>Error: Migration AI module not loaded</p><p style="font-size: 0.875rem; margin-top: 0.5rem;">Please refresh the page</p></div>';
         return;
     }
+
+    if (typeof Chart === 'undefined') {
+        console.error('❌ Chart.js not loaded');
+        document.getElementById('migration-loading').innerHTML =
+            '<div style="color: var(--error-color); text-align: center; padding: 2rem;">Error: Chart.js not loaded</div>';
+        return;
+    }
+
+    console.log('✅ Dependencies loaded');
 
     const grid = document.getElementById('migration-predictions-grid');
     const loading = document.getElementById('migration-loading');
@@ -348,21 +362,35 @@
     // Fetch and analyze data
     async function loadMigrationData() {
         try {
+            console.log('🔄 Loading migration data...');
+
             loading.style.display = 'block';
             grid.style.display = 'none';
             emptyState.style.display = 'none';
 
+            // Check if BirdNET is initialized
+            if (typeof BirdNET === 'undefined' || !BirdNET.data) {
+                console.error('❌ BirdNET not initialized');
+                loading.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>Waiting for BirdNET initialization...</p></div>';
+                setTimeout(loadMigrationData, 1000);
+                return;
+            }
+
             // Get all detections
-            const detections = BirdNET.data.detections || [];
+            const detections = BirdNET.data.detections || BirdNET.data.recentDetections || [];
+            console.log(`📊 Found ${detections.length} detections`);
 
             if (detections.length === 0) {
+                console.log('ℹ️ No detections found, showing empty state');
                 loading.style.display = 'none';
                 emptyState.style.display = 'block';
                 return;
             }
 
             // Analyze with AI
+            console.log('🤖 Analyzing migration patterns...');
             allPredictions = await MigrationAI.analyzeMigrationPatterns(detections);
+            console.log(`✅ Generated ${allPredictions.length} predictions`);
 
             // Update stats
             updateStats(allPredictions);
@@ -376,9 +404,15 @@
             loading.style.display = 'none';
             grid.style.display = 'grid';
 
+            console.log('✅ Migration data loaded successfully');
+
         } catch (error) {
-            console.error('Error loading migration data:', error);
-            loading.innerHTML = '<p style="color: var(--error-color);">Error loading migration data</p>';
+            console.error('❌ Error loading migration data:', error);
+            loading.innerHTML = `<div style="color: var(--error-color); text-align: center; padding: 2rem;">
+                <p>Error loading migration data</p>
+                <p style="font-size: 0.875rem; margin-top: 0.5rem;">${error.message}</p>
+                <button onclick="window.refreshMigrationTab()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
+            </div>`;
         }
     }
 
