@@ -31,6 +31,26 @@ const BirdAnalytics = {
     },
 
     /**
+     * Parse detection date/time from API format
+     * API format: { "date": "2025-10-27", "time": "10:53:12" }
+     */
+    parseDetectionDate(detection) {
+        // Handle separate date and time fields (BirdNET-Go v2 format)
+        if (detection.date && detection.time) {
+            return new Date(`${detection.date}T${detection.time}`);
+        }
+
+        // Fallback to other formats
+        if (detection.begin_time) return new Date(detection.begin_time);
+        if (detection.timestamp) return new Date(detection.timestamp);
+        if (detection.date) return new Date(detection.date);
+        if (detection.DateTime) return new Date(detection.DateTime);
+
+        // Last resort - use current time
+        return new Date();
+    },
+
+    /**
      * Initialize the application
      */
     async init() {
@@ -177,7 +197,7 @@ const BirdAnalytics = {
 
         detections.forEach(d => {
             const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
-            const date = new Date(d.begin_time || d.timestamp || d.date);
+            const date = this.parseDetectionDate(d);
 
             if (!speciesData[species]) {
                 speciesData[species] = {
@@ -440,7 +460,7 @@ const BirdAnalytics = {
             }
 
             filtered = filtered.filter(d => {
-                const date = new Date(d.begin_time || d.timestamp || d.date);
+                const date = this.parseDetectionDate(d);
                 return date >= cutoff;
             });
         }
@@ -465,7 +485,7 @@ const BirdAnalytics = {
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         detections.forEach(d => {
-            const date = new Date(d.begin_time || d.timestamp || d.date);
+            const date = this.parseDetectionDate(d);
             months[date.getMonth()]++;
         });
 
@@ -498,7 +518,7 @@ const BirdAnalytics = {
 
         // Count detections per day
         detections.forEach(d => {
-            const date = new Date(d.begin_time || d.timestamp || d.date);
+            const date = this.parseDetectionDate(d);
             const key = date.toISOString().split('T')[0];
             if (days[key]) {
                 days[key].count++;
@@ -520,7 +540,7 @@ const BirdAnalytics = {
         const hours = Array(24).fill(0);
 
         detections.forEach(d => {
-            const date = new Date(d.begin_time || d.timestamp || d.date);
+            const date = this.parseDetectionDate(d);
             const hour = date.getHours();
             hours[hour]++;
         });
@@ -535,7 +555,7 @@ const BirdAnalytics = {
         const days = Array(7).fill(0);
 
         detections.forEach(d => {
-            const date = new Date(d.begin_time || d.timestamp || d.date);
+            const date = this.parseDetectionDate(d);
             const day = date.getDay();
             days[day]++;
         });
@@ -557,15 +577,15 @@ const BirdAnalytics = {
                     name: species,
                     count: 0,
                     totalConfidence: 0,
-                    firstSeen: new Date(d.begin_time || d.timestamp || d.date),
-                    lastSeen: new Date(d.begin_time || d.timestamp || d.date)
+                    firstSeen: this.parseDetectionDate(d),
+                    lastSeen: this.parseDetectionDate(d)
                 };
             }
 
             speciesCounts[species].count++;
             speciesCounts[species].totalConfidence += parseFloat(d.confidence || 0);
 
-            const date = new Date(d.begin_time || d.timestamp || d.date);
+            const date = this.parseDetectionDate(d);
             if (date < speciesCounts[species].firstSeen) {
                 speciesCounts[species].firstSeen = date;
             }
@@ -611,7 +631,7 @@ const BirdAnalytics = {
         today.setHours(0, 0, 0, 0);
 
         const todayDetections = detections.filter(d => {
-            const date = new Date(d.begin_time || d.timestamp || d.date);
+            const date = this.parseDetectionDate(d);
             return date >= today;
         });
 
@@ -630,7 +650,7 @@ const BirdAnalytics = {
         return detections
             .map(d => ({
                 ...d,
-                timestamp: new Date(d.begin_time || d.timestamp || d.date)
+                timestamp: this.parseDetectionDate(d)
             }))
             .sort((a, b) => b.timestamp - a.timestamp)
             .slice(0, limit);
