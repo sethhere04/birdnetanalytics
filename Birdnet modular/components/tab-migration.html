@@ -1,115 +1,605 @@
-<!-- Migration Tab Content -->
-<div class="section">
-    <h2>🦅 Migration Tracking</h2>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <div id="migration-analysis-summary">Analyzing migration patterns from your detections...</div>
-        <button onclick="location.reload()" class="btn btn-primary">Refresh Analysis</button>
-    </div>
-    
-    <!-- Migration Status Cards -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-        <div style="background: #ecfdf5; padding: 1rem; border-radius: 8px; border-left: 4px solid #10b981;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #065f46;">🛬 Arriving Species</h3>
-            <div id="arriving-species-list" style="max-height: 200px; overflow-y: auto;">
-                <p style="color: #6b7280; font-size: 0.875rem;">Loading...</p>
-            </div>
+<div class="migration-container">
+    <!-- Header Section -->
+    <div class="migration-header">
+        <div class="migration-header-content">
+            <h2 class="migration-title">Migration Intelligence</h2>
+            <p class="migration-subtitle">AI-powered predictions based on your detection history</p>
         </div>
-        
-        <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #3b82f6;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #1e40af;">✅ Present Species</h3>
-            <div id="present-species-list" style="max-height: 200px; overflow-y: auto;">
-                <p style="color: #6b7280; font-size: 0.875rem;">Loading...</p>
+        <div class="migration-stats">
+            <div class="migration-stat">
+                <span class="stat-value" id="migration-species-count">0</span>
+                <span class="stat-label">Species Tracked</span>
             </div>
-        </div>
-        
-        <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; border-left: 4px solid #f59e0b;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #92400e;">🛫 Departing Species</h3>
-            <div id="departing-species-list" style="max-height: 200px; overflow-y: auto;">
-                <p style="color: #6b7280; font-size: 0.875rem;">Loading...</p>
+            <div class="migration-stat">
+                <span class="stat-value" id="migration-present-count">0</span>
+                <span class="stat-label">Currently Present</span>
             </div>
-        </div>
-        
-        <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; border-left: 4px solid #6b7280;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #374151;">🔮 Expected Species</h3>
-            <div id="expected-species-list" style="max-height: 200px; overflow-y: auto;">
-                <p style="color: #6b7280; font-size: 0.875rem;">Loading...</p>
+            <div class="migration-stat">
+                <span class="stat-value" id="migration-expected-count">0</span>
+                <span class="stat-label">Expected Soon</span>
             </div>
         </div>
     </div>
-    
-    <!-- Personal Migration Calendar -->
-    <div id="personal-migration-content">
-        <div class="loading-placeholder">Loading your personal migration calendar...</div>
+
+    <!-- Filter Bar -->
+    <div class="migration-filters">
+        <button class="filter-btn active" data-filter="all">All Species</button>
+        <button class="filter-btn" data-filter="present">Present Now</button>
+        <button class="filter-btn" data-filter="expected">Expected Soon</button>
+        <button class="filter-btn" data-filter="migrating">Migrating</button>
+        <button class="filter-btn" data-filter="departed">Departed</button>
+    </div>
+
+    <!-- Timeline Visualization -->
+    <div class="migration-timeline-section">
+        <h3 class="section-title">Annual Migration Timeline</h3>
+        <div class="timeline-container">
+            <canvas id="migration-timeline-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- Species Cards Grid -->
+    <div class="migration-grid" id="migration-predictions-grid">
+        <!-- Cards will be inserted here by JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div class="migration-empty" id="migration-empty-state" style="display: none;">
+        <div class="empty-icon">🦅</div>
+        <h3>No Detection History Yet</h3>
+        <p>Start detecting birds to see AI-powered migration predictions</p>
+    </div>
+
+    <!-- Loading State -->
+    <div class="migration-loading" id="migration-loading">
+        <div class="loading-spinner"></div>
+        <p>Analyzing migration patterns...</p>
     </div>
 </div>
 
-<!-- AI Migration Forecast -->
-<div class="section">
-    <h2>🤖 AI Migration Forecast</h2>
-    
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <div style="font-size: 0.875rem; color: #6b7280;">
-            AI-powered predictions based on weather patterns and historical data
-        </div>
-        <button id="ai-forecast-refresh" class="btn btn-primary" onclick="typeof updateAIMigrationForecast === 'function' && updateAIMigrationForecast()">
-            🔄 Refresh Forecast
-        </button>
-    </div>
-    
-    <!-- Weather Summary -->
-    <div id="weather-summary" style="margin-bottom: 1rem;">
-        <div class="info-box info-box-info">Loading weather conditions...</div>
-    </div>
-    
-    <!-- AI Forecast Info -->
-    <div id="ai-forecast-info" style="margin-bottom: 1rem;">
-        <div class="loading-placeholder">Loading AI predictions...</div>
-    </div>
-    
-    <!-- AI Forecast Table -->
-    <div style="overflow-x: auto; margin-bottom: 1rem;">
-        <table id="ai-forecast-table" style="width: 100%; border-collapse: collapse; background: white;">
-            <thead>
-                <tr>
-                    <th style="text-align: left; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Species</th>
-                    <th style="text-align: center; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Probability</th>
-                    <th style="text-align: center; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Timeframe</th>
-                    <th style="text-align: center; padding: 0.75rem; background: #f3f4f6; border: 1px solid #e5e7eb; font-weight: 600;">Conditions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="4" class="loading-placeholder">Loading AI predictions...</td></tr>
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Forecast Details Toggle -->
-    <button id="ai-forecast-details-toggle" class="btn btn-secondary">
-        📊 Show Detailed Analysis
-    </button>
-    
-    <!-- Forecast Details (Hidden by default) -->
-    <div id="ai-forecast-details" style="display: none; margin-top: 1rem; padding: 1rem; background: #f9fafb; border-radius: 8px;">
-        <h3 style="margin: 0 0 1rem 0; font-size: 1rem;">Detailed Forecast Analysis</h3>
-        <div style="margin-bottom: 1rem;">
-            <canvas id="migration-probability-chart" style="max-height: 300px;"></canvas>
-        </div>
-        <div id="prediction-factors-list" style="margin-top: 1rem;">
-            <!-- Prediction factors will be loaded here -->
-        </div>
-        <p style="color: #6b7280; font-size: 0.875rem; margin: 1rem 0 0 0;">
-            AI predictions are based on current weather conditions, historical migration patterns, and species-specific behaviors.
-        </p>
-    </div>
-</div>
+<style>
+.migration-container {
+    padding: 1rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
 
-<!-- Migration Map (if available) -->
-<div class="section">
-    <h2>🗺️ Migration Map</h2>
-    <div id="migration-map-container" style="height: 400px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280;">
-        <div>
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗺️</div>
-            <div>Migration map visualization</div>
-        </div>
-    </div>
-</div>
+.migration-header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.migration-header-content {
+    margin-bottom: 1.5rem;
+}
+
+.migration-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.migration-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.migration-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.migration-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.5rem;
+}
+
+.migration-filters {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-size: 0.813rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background: var(--bg-hover);
+}
+
+.filter-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.migration-timeline-section {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+}
+
+.timeline-container {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.migration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+}
+
+.migration-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.2s;
+}
+
+.migration-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.migration-card[data-status="present"] {
+    border-left: 4px solid #10b981;
+}
+
+.migration-card[data-status="expected"] {
+    border-left: 4px solid #3b82f6;
+}
+
+.migration-card[data-status="migrating"] {
+    border-left: 4px solid #f59e0b;
+}
+
+.migration-card[data-status="departed"] {
+    border-left: 4px solid #6b7280;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.species-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.status-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.badge {
+    padding: 0.25rem 0.625rem;
+    border-radius: 12px;
+    font-size: 0.688rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.badge-status {
+    background: var(--status-color);
+    color: white;
+}
+
+.badge-confidence {
+    background: var(--confidence-color);
+    color: white;
+}
+
+.card-message {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.card-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: 0.688rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 0.25rem;
+}
+
+.detail-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.migration-chart-mini {
+    margin-top: 1rem;
+    height: 60px;
+}
+
+.migration-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.migration-empty h3 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.migration-empty p {
+    font-size: 0.875rem;
+}
+
+.migration-loading {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .migration-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .migration-stats {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// Initialize migration tab when loaded
+(async function() {
+    if (typeof MigrationAI === 'undefined') {
+        console.error('MigrationAI module not loaded');
+        return;
+    }
+
+    const grid = document.getElementById('migration-predictions-grid');
+    const loading = document.getElementById('migration-loading');
+    const emptyState = document.getElementById('migration-empty-state');
+    let allPredictions = [];
+    let timelineChart = null;
+
+    // Fetch and analyze data
+    async function loadMigrationData() {
+        try {
+            loading.style.display = 'block';
+            grid.style.display = 'none';
+            emptyState.style.display = 'none';
+
+            // Get all detections
+            const detections = BirdNET.data.detections || [];
+
+            if (detections.length === 0) {
+                loading.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            // Analyze with AI
+            allPredictions = await MigrationAI.analyzeMigrationPatterns(detections);
+
+            // Update stats
+            updateStats(allPredictions);
+
+            // Render predictions
+            renderPredictions(allPredictions);
+
+            // Create timeline chart
+            createTimelineChart(allPredictions);
+
+            loading.style.display = 'none';
+            grid.style.display = 'grid';
+
+        } catch (error) {
+            console.error('Error loading migration data:', error);
+            loading.innerHTML = '<p style="color: var(--error-color);">Error loading migration data</p>';
+        }
+    }
+
+    // Update header stats
+    function updateStats(predictions) {
+        const speciesCount = predictions.length;
+        const presentCount = predictions.filter(p => p.status === 'present' || p.status === 'migrating').length;
+        const expectedCount = predictions.filter(p => p.status === 'expected').length;
+
+        document.getElementById('migration-species-count').textContent = speciesCount;
+        document.getElementById('migration-present-count').textContent = presentCount;
+        document.getElementById('migration-expected-count').textContent = expectedCount;
+    }
+
+    // Render prediction cards
+    function renderPredictions(predictions) {
+        grid.innerHTML = '';
+
+        predictions.forEach(pred => {
+            const card = createPredictionCard(pred);
+            grid.appendChild(card);
+        });
+    }
+
+    // Create prediction card
+    function createPredictionCard(pred) {
+        const card = document.createElement('div');
+        card.className = 'migration-card';
+        card.setAttribute('data-status', pred.status);
+        card.setAttribute('data-pattern', pred.pattern);
+
+        const statusColor = MigrationAI.getStatusColor(pred.status);
+        const confidenceColor = MigrationAI.getConfidenceColor(pred.confidence);
+
+        const currentYear = new Date().getFullYear();
+
+        card.innerHTML = `
+            <div class="card-header">
+                <h3 class="species-name">${pred.species}</h3>
+                <div class="status-badges">
+                    <span class="badge badge-status" style="--status-color: ${statusColor}">${pred.status}</span>
+                    <span class="badge badge-confidence" style="--confidence-color: ${confidenceColor}">${pred.confidence}</span>
+                </div>
+            </div>
+            <p class="card-message">${pred.message}</p>
+            <div class="card-details">
+                <div class="detail-item">
+                    <span class="detail-label">Pattern</span>
+                    <span class="detail-value">${pred.pattern}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Detections</span>
+                    <span class="detail-value">${pred.detectionCount}</span>
+                </div>
+                ${pred.historicalFirst ? `
+                <div class="detail-item">
+                    <span class="detail-label">First Seen</span>
+                    <span class="detail-value">${MigrationAI.formatDate(pred.historicalFirst, currentYear)}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Last Seen</span>
+                    <span class="detail-value">${MigrationAI.formatDate(pred.historicalLast, currentYear)}</span>
+                </div>
+                ` : ''}
+            </div>
+            ${pred.monthlyPattern ? `
+            <div class="migration-chart-mini">
+                <canvas id="chart-${pred.species.replace(/[^a-zA-Z0-9]/g, '')}"></canvas>
+            </div>
+            ` : ''}
+        `;
+
+        // Create mini sparkline for monthly pattern
+        if (pred.monthlyPattern) {
+            setTimeout(() => {
+                createMiniChart(pred.species, pred.monthlyPattern);
+            }, 100);
+        }
+
+        return card;
+    }
+
+    // Create mini monthly chart
+    function createMiniChart(species, monthlyPattern) {
+        const canvasId = 'chart-' + species.replace(/[^a-zA-Z0-9]/g, '');
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'],
+                datasets: [{
+                    data: monthlyPattern,
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                }
+            }
+        });
+    }
+
+    // Create timeline chart
+    function createTimelineChart(predictions) {
+        const canvas = document.getElementById('migration-timeline-chart');
+        if (!canvas) return;
+
+        // Prepare data for timeline
+        const datasets = [];
+        const colors = {
+            'resident': '#10b981',
+            'summer': '#f59e0b',
+            'winter': '#3b82f6',
+            'transient': '#8b5cf6'
+        };
+
+        // Show top 10 species by detection count
+        const topSpecies = predictions.slice(0, 10);
+
+        topSpecies.forEach((pred, index) => {
+            if (pred.historicalFirst && pred.historicalLast) {
+                datasets.push({
+                    label: pred.species,
+                    data: [{
+                        x: [pred.historicalFirst, pred.historicalLast],
+                        y: index
+                    }],
+                    backgroundColor: colors[pred.pattern] || '#6b7280',
+                    borderColor: colors[pred.pattern] || '#6b7280',
+                    borderWidth: 2
+                });
+            }
+        });
+
+        if (timelineChart) {
+            timelineChart.destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
+        timelineChart = new Chart(ctx, {
+            type: 'bar',
+            data: { datasets },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const pred = topSpecies[context.dataIndex];
+                                return `${pred.species}: ${MigrationAI.formatDate(pred.historicalFirst, new Date().getFullYear())} - ${MigrationAI.formatDate(pred.historicalLast, new Date().getFullYear())}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        min: 0,
+                        max: 365,
+                        ticks: {
+                            callback: function(value) {
+                                const date = new Date(2024, 0, value);
+                                return date.toLocaleDateString('en-US', { month: 'short' });
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Month of Year'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return topSpecies[value]?.species || '';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Filter functionality
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active state
+            filterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Filter predictions
+            const filter = btn.dataset.filter;
+            let filtered = allPredictions;
+
+            if (filter !== 'all') {
+                filtered = allPredictions.filter(pred => pred.status === filter);
+            }
+
+            renderPredictions(filtered);
+        });
+    });
+
+    // Load data on init
+    await loadMigrationData();
+
+    // Store reference for refresh
+    window.refreshMigrationTab = loadMigrationData;
+})();
+</script>

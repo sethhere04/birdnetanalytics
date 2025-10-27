@@ -414,6 +414,9 @@
     <!-- Enhanced Visualizations -->
     <script src="js/enhanced-visualizations.js"></script>
 
+    <!-- Migration AI -->
+    <script src="js/migration-ai.js"></script>
+
     <!-- Initialization -->
     <script src="js/init.js"></script>
 
@@ -567,11 +570,9 @@
                         break;
 
                     case 'migration':
-                        if (typeof initializeAIMigrationSystem === 'function') {
-                            initializeAIMigrationSystem();
-                        }
-                        if (typeof updatePersonalMigrationCalendar === 'function') {
-                            await updatePersonalMigrationCalendar();
+                        // New migration tab has self-initializing script
+                        if (typeof window.refreshMigrationTab === 'function') {
+                            await window.refreshMigrationTab();
                         }
                         break;
 
