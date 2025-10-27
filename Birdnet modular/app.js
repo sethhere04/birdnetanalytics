@@ -122,98 +122,35 @@ const BirdAnalytics = {
     },
 
     /**
-     * Fetch detections from API with pagination
+     * Fetch recent detections from API (limited to 100 for timeline)
      */
     async fetchDetections() {
         try {
             const endpoints = [
-                '/detections',
-                '/notes'
+                '/detections?limit=100',
+                '/notes?limit=100&offset=0'
             ];
 
-            // Try each endpoint
             for (const endpoint of endpoints) {
                 try {
-                    console.log(`📡 Trying endpoint: ${endpoint}`);
-                    const detections = await this.fetchAllDetectionsPaginated(endpoint);
-
-                    if (detections.length > 0) {
-                        console.log(`✅ Successfully loaded ${detections.length} total detections from ${endpoint}`);
+                    const response = await fetch(`${this.config.apiBase}${endpoint}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const detections = Array.isArray(data) ? data : (data.data || []);
+                        console.log(`✅ Found ${detections.length} recent detections from ${endpoint}`);
                         return detections;
                     }
                 } catch (e) {
-                    console.warn(`❌ Endpoint ${endpoint} failed:`, e.message);
                     continue;
                 }
             }
 
-            console.warn('⚠️ No detections endpoint available');
+            console.warn('No detections endpoint available');
             return [];
         } catch (error) {
-            console.error('❌ Failed to fetch detections:', error);
+            console.error('Failed to fetch detections:', error);
             return [];
         }
-    },
-
-    /**
-     * Fetch all detections using pagination
-     */
-    async fetchAllDetectionsPaginated(endpoint) {
-        const batchSize = 1000;
-        let offset = 0;
-        let allDetections = [];
-        let consecutiveEmpty = 0;
-
-        while (true) {
-            try {
-                const url = `${this.config.apiBase}${endpoint}?limit=${batchSize}&offset=${offset}`;
-                console.log(`  📥 Fetching batch: offset=${offset}, limit=${batchSize}`);
-
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    console.warn(`  ⚠️ HTTP ${response.status} - stopping pagination`);
-                    break;
-                }
-
-                const data = await response.json();
-                const detections = Array.isArray(data) ? data : (data.data || []);
-
-                if (detections.length === 0) {
-                    consecutiveEmpty++;
-                    if (consecutiveEmpty >= 2) {
-                        console.log(`  ✓ No more records found`);
-                        break;
-                    }
-                    offset += batchSize;
-                    continue;
-                }
-
-                consecutiveEmpty = 0;
-                allDetections.push(...detections);
-                console.log(`  ✓ Loaded ${detections.length} records (total: ${allDetections.length})`);
-
-                // If we got fewer records than requested, we've reached the end
-                if (detections.length < batchSize) {
-                    console.log(`  ✓ Reached end of data`);
-                    break;
-                }
-
-                offset += batchSize;
-
-                // Safety limit to prevent infinite loops
-                if (allDetections.length >= 100000) {
-                    console.warn(`  ⚠️ Reached safety limit of 100,000 records`);
-                    break;
-                }
-
-            } catch (error) {
-                console.error(`  ❌ Error fetching batch at offset ${offset}:`, error);
-                break;
-            }
-        }
-
-        return allDetections;
     },
 
     /**
@@ -249,64 +186,38 @@ const BirdAnalytics = {
     },
 
     /**
-     * Analyze migration patterns
+     * Analyze migration patterns from species summary
      */
     analyzeMigrationPatterns() {
-        const detections = this.data.detections;
-        if (detections.length === 0) return [];
+        const species = this.data.species;
+        if (species.length === 0) return [];
 
-        // Group by species
-        const speciesData = {};
-
-        detections.forEach(d => {
-            const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
-            const date = this.parseDetectionDate(d);
-
-            if (!speciesData[species]) {
-                speciesData[species] = {
-                    name: species,
-                    detections: []
-                };
-            }
-
-            speciesData[species].detections.push(date);
-        });
-
-        // Analyze each species
         const migrations = [];
+        const today = new Date();
 
-        for (const [species, data] of Object.entries(speciesData)) {
-            const dates = data.detections.sort((a, b) => a - b);
+        for (const s of species) {
+            const speciesName = s.commonName || s.common_name || s.scientificName || 'Unknown';
+            const firstSeen = s.firstSeen ? new Date(s.firstSeen) : null;
+            const lastSeen = s.lastSeen ? new Date(s.lastSeen) : null;
+            const count = s.detections || s.count || 0;
 
-            // Get day of year for each detection
-            const daysOfYear = dates.map(d => this.getDayOfYear(d));
+            if (!firstSeen || !lastSeen) continue;
 
-            // Calculate presence by month
-            const monthlyPresence = Array(12).fill(0);
-            dates.forEach(d => {
-                monthlyPresence[d.getMonth()]++;
-            });
+            // Simple pattern classification based on first/last seen
+            const pattern = this.classifyMigrationPatternSimple(firstSeen, lastSeen);
 
-            // Determine pattern
-            const pattern = this.classifyMigrationPattern(monthlyPresence, dates);
-
-            // Calculate statistics
-            const firstSeen = dates[0];
-            const lastSeen = dates[dates.length - 1];
-            const avgDayOfYear = daysOfYear.reduce((a, b) => a + b, 0) / daysOfYear.length;
-
-            // Predict next arrival/departure
-            const prediction = this.predictMigration(pattern, daysOfYear, monthlyPresence);
+            // Simple prediction based on last seen date
+            const prediction = this.predictMigrationSimple(pattern, firstSeen, lastSeen, today);
 
             migrations.push({
-                species,
+                species: speciesName,
                 pattern: pattern.type,
                 firstSeen,
                 lastSeen,
-                detectionCount: dates.length,
-                monthlyPresence,
+                detectionCount: count,
+                monthlyPresence: [],
                 prediction,
-                confidence: this.calculateConfidence(dates)
+                confidence: count >= 50 ? 'high' : count >= 20 ? 'medium' : 'low'
             });
         }
 
@@ -315,6 +226,76 @@ const BirdAnalytics = {
             const bDate = b.prediction.nextDate || new Date(9999, 0, 1);
             return aDate - bDate;
         });
+    },
+
+    /**
+     * Classify migration pattern (simplified version for species summary)
+     */
+    classifyMigrationPatternSimple(firstSeen, lastSeen) {
+        const daysSinceFirst = (new Date() - firstSeen) / (1000 * 60 * 60 * 24);
+        const daysSinceLast = (new Date() - lastSeen) / (1000 * 60 * 60 * 24);
+
+        // If seen recently and for a long time, likely resident
+        if (daysSinceFirst > 300 && daysSinceLast < 30) {
+            return { type: 'resident', description: 'Year-round resident' };
+        }
+
+        // Determine by months
+        const firstMonth = firstSeen.getMonth();
+        const lastMonth = lastSeen.getMonth();
+
+        // Summer (April-September)
+        if (firstMonth >= 3 && firstMonth <= 5 && lastMonth >= 7 && lastMonth <= 9) {
+            return { type: 'summer', description: 'Summer breeding visitor' };
+        }
+
+        // Winter (October-March)
+        if ((firstMonth >= 9 || firstMonth <= 2) && (lastMonth >= 9 || lastMonth <= 2)) {
+            return { type: 'winter', description: 'Winter visitor' };
+        }
+
+        // Otherwise transient
+        return { type: 'transient', description: 'Migratory (passing through)' };
+    },
+
+    /**
+     * Predict migration timing (simplified)
+     */
+    predictMigrationSimple(pattern, firstSeen, lastSeen, today) {
+        const daysSinceLast = (today - lastSeen) / (1000 * 60 * 60 * 24);
+
+        if (pattern.type === 'resident') {
+            return {
+                status: 'present',
+                message: 'Expected year-round',
+                nextDate: null
+            };
+        }
+
+        // If seen within last 7 days, consider present
+        if (daysSinceLast < 7) {
+            return {
+                status: 'present',
+                message: `Recently seen on ${lastSeen.toLocaleDateString()}`,
+                nextDate: lastSeen
+            };
+        }
+
+        // If not seen recently, consider departed
+        if (daysSinceLast > 30) {
+            return {
+                status: 'departed',
+                message: `Last seen ${lastSeen.toLocaleDateString()}. May return in migration season.`,
+                nextDate: new Date(today.getFullYear() + 1, firstSeen.getMonth(), firstSeen.getDate())
+            };
+        }
+
+        // In between - migrating
+        return {
+            status: 'migrating',
+            message: 'May appear during migration',
+            nextDate: today
+        };
     },
 
     /**
@@ -461,41 +442,42 @@ const BirdAnalytics = {
 
     /**
      * Analyze data to generate insights
+     * Uses species summary for most analytics, detections for recent activity only
      */
     analyzeData() {
         const { species, detections } = this.data;
 
-        if (detections.length === 0) {
+        if (species.length === 0 && detections.length === 0) {
             return this.getEmptyAnalytics();
         }
 
-        // Apply filters
-        const filteredDetections = this.applyFilters(detections);
+        // Use species summary as primary data source
+        const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
 
         return {
-            // Basic stats
-            totalSpecies: new Set(detections.map(d => d.commonName || d.common_name || d.scientificName)).size,
-            totalDetections: detections.length,
-            filteredDetections: filteredDetections.length,
+            // Basic stats from species summary
+            totalSpecies: species.length,
+            totalDetections: totalDetections,
+            filteredDetections: totalDetections,
 
-            // Time-based analytics
-            daily: this.analyzeDailyActivity(filteredDetections),
-            hourly: this.analyzeHourlyPattern(filteredDetections),
-            weekly: this.analyzeWeeklyPattern(filteredDetections),
-            monthly: this.analyzeMonthlyPattern(filteredDetections),
+            // Time-based analytics (from recent 100 detections - sample data)
+            daily: this.analyzeDailyActivity(detections),
+            hourly: this.analyzeHourlyPattern(detections),
+            weekly: this.analyzeWeeklyPattern(detections),
+            monthly: this.analyzeMonthlyPattern(detections),
 
-            // Species analytics
-            topSpecies: this.getTopSpecies(filteredDetections),
-            allSpecies: this.getAllSpeciesStats(filteredDetections),
-            diversity: this.calculateDiversity(filteredDetections),
-            rarest: this.getRarestSpecies(filteredDetections),
+            // Species analytics (from species summary - accurate)
+            topSpecies: this.getTopSpeciesFromSummary(species),
+            allSpecies: this.getAllSpeciesFromSummary(species),
+            diversity: this.calculateDiversityFromSummary(species),
+            rarest: this.getRarestFromSummary(species),
 
-            // Recent activity
-            today: this.getTodayStats(filteredDetections),
-            recent: this.getRecentDetections(filteredDetections, 50),
+            // Recent activity (from recent 100 detections)
+            today: this.getTodayStats(detections),
+            recent: this.getRecentDetections(detections, 50),
 
             // Insights
-            insights: this.generateInsights(filteredDetections)
+            insights: this.generateInsightsFromSummary(species, detections)
         };
     },
 
@@ -720,7 +702,148 @@ const BirdAnalytics = {
     },
 
     /**
-     * Generate AI insights
+     * Get top species from species summary endpoint
+     */
+    getTopSpeciesFromSummary(species) {
+        return species
+            .map(s => ({
+                name: s.commonName || s.common_name || s.scientificName || 'Unknown',
+                count: s.detections || s.count || 0,
+                avgConfidence: s.confidence || s.avgConfidence || 0,
+                firstSeen: s.firstSeen ? new Date(s.firstSeen) : new Date(),
+                lastSeen: s.lastSeen ? new Date(s.lastSeen) : new Date(),
+                totalConfidence: (s.detections || s.count || 0) * (s.confidence || 0)
+            }))
+            .sort((a, b) => b.count - a.count);
+    },
+
+    /**
+     * Get all species stats from summary
+     */
+    getAllSpeciesFromSummary(species) {
+        return this.getTopSpeciesFromSummary(species);
+    },
+
+    /**
+     * Calculate diversity from species summary
+     */
+    calculateDiversityFromSummary(species) {
+        const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
+
+        return species
+            .sort((a, b) => (b.detections || b.count || 0) - (a.detections || a.count || 0))
+            .slice(0, 10)
+            .map(s => ({
+                name: s.commonName || s.common_name || s.scientificName || 'Unknown',
+                count: s.detections || s.count || 0,
+                percentage: totalDetections > 0 ? (((s.detections || s.count || 0) / totalDetections) * 100).toFixed(1) : '0.0'
+            }));
+    },
+
+    /**
+     * Get rarest species from summary
+     */
+    getRarestFromSummary(species) {
+        return species
+            .filter(s => (s.detections || s.count || 0) <= 3)
+            .map(s => ({
+                name: s.commonName || s.common_name || s.scientificName || 'Unknown',
+                count: s.detections || s.count || 0,
+                avgConfidence: s.confidence || s.avgConfidence || 0,
+                firstSeen: s.firstSeen ? new Date(s.firstSeen) : new Date(),
+                lastSeen: s.lastSeen ? new Date(s.lastSeen) : new Date()
+            }))
+            .sort((a, b) => a.count - b.count)
+            .slice(0, 10);
+    },
+
+    /**
+     * Generate insights from species summary and recent detections
+     */
+    generateInsightsFromSummary(species, detections) {
+        const insights = [];
+        const hourly = this.analyzeHourlyPattern(detections);
+        const topSpecies = this.getTopSpeciesFromSummary(species);
+        const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
+
+        // Peak activity time (from recent detections sample)
+        if (hourly.length > 0) {
+            const peakHour = hourly.reduce((max, h) => h.count > max.count ? h : max, hourly[0]);
+            if (peakHour.count > 0) {
+                insights.push({
+                    type: 'peak-time',
+                    icon: '🕐',
+                    title: 'Peak Activity Hour (Recent Sample)',
+                    text: `Based on recent detections, most bird activity occurs around ${peakHour.hour}:00 with ${peakHour.count} detections.`
+                });
+            }
+        }
+
+        // Most common bird (from accurate species summary)
+        if (topSpecies.length > 0) {
+            const top = topSpecies[0];
+            const percentage = totalDetections > 0 ? ((top.count / totalDetections) * 100).toFixed(1) : '0';
+            insights.push({
+                type: 'common-species',
+                icon: '👑',
+                title: 'Most Common Visitor',
+                text: `${top.name} is your backyard champion with ${top.count.toLocaleString()} total detections (${percentage}% of all sightings).`
+            });
+        }
+
+        // Species diversity (from accurate species summary)
+        const uniqueSpecies = species.length;
+        insights.push({
+            type: 'diversity',
+            icon: '🌈',
+            title: 'Species Diversity',
+            text: `You've detected ${uniqueSpecies} different species in your backyard with ${totalDetections.toLocaleString()} total detections. ${uniqueSpecies >= 15 ? 'Excellent diversity!' : uniqueSpecies >= 8 ? 'Good variety!' : 'More species may appear as seasons change.'}`
+        });
+
+        // Top 3 species
+        if (topSpecies.length >= 3) {
+            const top3 = topSpecies.slice(0, 3).map(s => s.name).join(', ');
+            insights.push({
+                type: 'top-species',
+                icon: '🏆',
+                title: 'Your Top 3 Species',
+                text: `${top3} are your most frequent visitors.`
+            });
+        }
+
+        // Rare visitors (from accurate species summary)
+        const rare = species.filter(s => (s.detections || s.count || 0) <= 3);
+        if (rare.length > 0) {
+            insights.push({
+                type: 'rare-visitors',
+                icon: '💎',
+                title: 'Rare Visitors',
+                text: `You've had ${rare.length} species with 3 or fewer sightings. These are your rarest backyard visitors!`
+            });
+        }
+
+        // Total detections milestone
+        if (totalDetections >= 10000) {
+            insights.push({
+                type: 'milestone',
+                icon: '🎉',
+                title: 'Detection Milestone!',
+                text: `Congratulations! You've recorded over ${(totalDetections / 1000).toFixed(0)}K bird detections. That's incredible!`
+            });
+        } else if (totalDetections >= 1000) {
+            insights.push({
+                type: 'milestone',
+                icon: '🎉',
+                title: 'Detection Milestone!',
+                text: `You've recorded over ${(totalDetections / 1000).toFixed(1)}K bird detections. Keep watching!`
+            });
+        }
+
+        return insights;
+    },
+
+    /**
+     * Generate AI insights (legacy - kept for compatibility)
      */
     generateInsights(detections) {
         const insights = [];
