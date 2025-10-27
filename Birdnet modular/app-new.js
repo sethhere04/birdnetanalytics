@@ -1,5 +1,5 @@
 /**
- * Backyard Birds Analytics - Modern Single Page Application
+ * Backyard Birds Analytics - Enhanced Version
  * API Base: http://192.168.68.129:8080/api/v2/
  */
 
@@ -8,27 +8,38 @@ const BirdAnalytics = {
     config: {
         apiBase: 'http://192.168.68.129:8080/api/v2',
         refreshInterval: 60000, // 1 minute
-        detectionLimit: 10000
+        detectionLimit: 10000,
+        useWikipediaImages: true
     },
 
     // Data storage
     data: {
         species: [],
         detections: [],
-        analytics: null
+        analytics: null,
+        speciesImages: {},
+        migrations: null
     },
 
     // Charts
     charts: {},
 
+    // Filters
+    filters: {
+        dateRange: 'all', // all, today, week, month
+        speciesFilter: ''
+    },
+
     /**
      * Initialize the application
      */
     async init() {
-        console.log('🦜 Initializing Backyard Birds Analytics...');
+        console.log('🦜 Initializing Enhanced Backyard Birds Analytics...');
 
-        // Set up tab switching
+        // Set up event listeners
         this.setupTabs();
+        this.setupFilters();
+        this.setupExport();
 
         // Load data
         await this.loadData();
@@ -58,6 +69,12 @@ const BirdAnalytics = {
             // Analyze data
             this.data.analytics = this.analyzeData();
 
+            // Analyze migration patterns
+            this.data.migrations = this.analyzeMigrationPatterns();
+
+            // Load species images
+            this.loadSpeciesImages();
+
             // Update UI
             this.updateDashboard();
 
@@ -80,7 +97,6 @@ const BirdAnalytics = {
             return Array.isArray(data) ? data : [];
         } catch (error) {
             console.warn('Species endpoint failed, trying alternative...');
-            // Return empty array if endpoint not available
             return [];
         }
     },
@@ -118,6 +134,249 @@ const BirdAnalytics = {
     },
 
     /**
+     * Load species thumbnail images from Wikipedia
+     */
+    async loadSpeciesImages() {
+        const species = this.data.analytics?.topSpecies || [];
+
+        for (const sp of species.slice(0, 20)) {
+            if (this.data.speciesImages[sp.name]) continue;
+
+            try {
+                const searchName = sp.name.replace(' ', '_');
+                const response = await fetch(
+                    `https://en.wikipedia.org/api/rest_v1/page/summary/${searchName}`
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.thumbnail) {
+                        this.data.speciesImages[sp.name] = data.thumbnail.source;
+                        console.log(`✅ Loaded image for ${sp.name}`);
+                    }
+                }
+            } catch (error) {
+                console.warn(`No image found for ${sp.name}`);
+            }
+        }
+
+        // Refresh species displays with images
+        this.renderOverview();
+        this.renderSpecies();
+    },
+
+    /**
+     * Analyze migration patterns
+     */
+    analyzeMigrationPatterns() {
+        const detections = this.data.detections;
+        if (detections.length === 0) return [];
+
+        // Group by species
+        const speciesData = {};
+
+        detections.forEach(d => {
+            const species = d.common_name || d.scientificName || 'Unknown';
+            const date = new Date(d.begin_time || d.timestamp || d.date);
+
+            if (!speciesData[species]) {
+                speciesData[species] = {
+                    name: species,
+                    detections: []
+                };
+            }
+
+            speciesData[species].detections.push(date);
+        });
+
+        // Analyze each species
+        const migrations = [];
+
+        for (const [species, data] of Object.entries(speciesData)) {
+            const dates = data.detections.sort((a, b) => a - b);
+
+            // Get day of year for each detection
+            const daysOfYear = dates.map(d => this.getDayOfYear(d));
+
+            // Calculate presence by month
+            const monthlyPresence = Array(12).fill(0);
+            dates.forEach(d => {
+                monthlyPresence[d.getMonth()]++;
+            });
+
+            // Determine pattern
+            const pattern = this.classifyMigrationPattern(monthlyPresence, dates);
+
+            // Calculate statistics
+            const firstSeen = dates[0];
+            const lastSeen = dates[dates.length - 1];
+            const avgDayOfYear = daysOfYear.reduce((a, b) => a + b, 0) / daysOfYear.length;
+
+            // Predict next arrival/departure
+            const prediction = this.predictMigration(pattern, daysOfYear, monthlyPresence);
+
+            migrations.push({
+                species,
+                pattern: pattern.type,
+                firstSeen,
+                lastSeen,
+                detectionCount: dates.length,
+                monthlyPresence,
+                prediction,
+                confidence: this.calculateConfidence(dates)
+            });
+        }
+
+        return migrations.sort((a, b) => {
+            const aDate = a.prediction.nextDate || new Date(9999, 0, 1);
+            const bDate = b.prediction.nextDate || new Date(9999, 0, 1);
+            return aDate - bDate;
+        });
+    },
+
+    /**
+     * Get day of year (1-366)
+     */
+    getDayOfYear(date) {
+        const start = new Date(date.getFullYear(), 0, 0);
+        const diff = date - start;
+        const oneDay = 1000 * 60 * 60 * 24;
+        return Math.floor(diff / oneDay);
+    },
+
+    /**
+     * Classify migration pattern
+     */
+    classifyMigrationPattern(monthlyPresence, dates) {
+        const presentMonths = monthlyPresence.filter(c => c > 0).length;
+        const total = monthlyPresence.reduce((a, b) => a + b, 0);
+
+        // Year-round resident
+        if (presentMonths >= 10) {
+            return { type: 'resident', description: 'Year-round resident' };
+        }
+
+        // Summer resident (May-August)
+        const summer = monthlyPresence.slice(4, 8).reduce((a, b) => a + b, 0);
+        if (summer / total > 0.6) {
+            return { type: 'summer', description: 'Summer breeding visitor' };
+        }
+
+        // Winter resident (November-February)
+        const winter = monthlyPresence.slice(10, 12).reduce((a, b) => a + b, 0) +
+                      monthlyPresence.slice(0, 2).reduce((a, b) => a + b, 0);
+        if (winter / total > 0.6) {
+            return { type: 'winter', description: 'Winter visitor' };
+        }
+
+        // Transient (spring/fall migration)
+        return { type: 'transient', description: 'Migratory (passing through)' };
+    },
+
+    /**
+     * Predict migration timing
+     */
+    predictMigration(pattern, daysOfYear, monthlyPresence) {
+        const today = new Date();
+        const currentDay = this.getDayOfYear(today);
+
+        if (pattern.type === 'resident') {
+            return {
+                status: 'present',
+                message: 'Expected year-round',
+                nextDate: null
+            };
+        }
+
+        const avgDay = daysOfYear.reduce((a, b) => a + b, 0) / daysOfYear.length;
+        const minDay = Math.min(...daysOfYear);
+        const maxDay = Math.max(...daysOfYear);
+
+        let status, message, nextDate;
+
+        if (pattern.type === 'summer') {
+            if (currentDay >= minDay && currentDay <= maxDay) {
+                status = 'present';
+                message = `Expected until ~${this.formatDayOfYear(maxDay)}`;
+                nextDate = this.getDayOfYearAsDate(maxDay);
+            } else if (currentDay < minDay) {
+                status = 'expected';
+                message = `Expected to arrive ~${this.formatDayOfYear(minDay)}`;
+                nextDate = this.getDayOfYearAsDate(minDay);
+            } else {
+                status = 'departed';
+                message = `Expected to return ~${this.formatDayOfYear(minDay)} next year`;
+                const next = new Date(today.getFullYear() + 1, 0, minDay);
+                nextDate = next;
+            }
+        } else if (pattern.type === 'winter') {
+            const winterStart = 305; // ~November 1
+            const winterEnd = 75;    // ~March 15
+
+            if (currentDay >= winterStart || currentDay <= winterEnd) {
+                status = 'present';
+                message = 'Currently present for winter';
+                nextDate = this.getDayOfYearAsDate(winterEnd);
+            } else if (currentDay < winterStart) {
+                status = 'expected';
+                message = `Expected to arrive ~${this.formatDayOfYear(winterStart)}`;
+                nextDate = this.getDayOfYearAsDate(winterStart);
+            } else {
+                status = 'departed';
+                message = `Expected to return ~${this.formatDayOfYear(winterStart)}`;
+                nextDate = this.getDayOfYearAsDate(winterStart);
+            }
+        } else { // transient
+            const springWindow = currentDay >= minDay - 30 && currentDay <= minDay + 30;
+            const fallWindow = currentDay >= maxDay - 30 && currentDay <= maxDay + 30;
+
+            if (springWindow || fallWindow) {
+                status = 'migrating';
+                message = 'May appear during migration';
+                nextDate = new Date();
+            } else if (currentDay < minDay) {
+                status = 'expected';
+                message = `Spring migration ~${this.formatDayOfYear(minDay)}`;
+                nextDate = this.getDayOfYearAsDate(minDay);
+            } else {
+                status = 'departed';
+                message = `Next spring migration ~${this.formatDayOfYear(minDay)}`;
+                const next = new Date(today.getFullYear() + 1, 0, minDay);
+                nextDate = next;
+            }
+        }
+
+        return { status, message, nextDate };
+    },
+
+    /**
+     * Format day of year as readable date
+     */
+    formatDayOfYear(day) {
+        const date = new Date(new Date().getFullYear(), 0, day);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    },
+
+    /**
+     * Get date object from day of year
+     */
+    getDayOfYearAsDate(day) {
+        return new Date(new Date().getFullYear(), 0, day);
+    },
+
+    /**
+     * Calculate confidence
+     */
+    calculateConfidence(dates) {
+        const years = new Set(dates.map(d => d.getFullYear())).size;
+        const count = dates.length;
+
+        if (years >= 3 && count >= 20) return 'high';
+        if (years >= 2 && count >= 10) return 'medium';
+        return 'low';
+    },
+
+    /**
      * Analyze data to generate insights
      */
     analyzeData() {
@@ -127,28 +386,98 @@ const BirdAnalytics = {
             return this.getEmptyAnalytics();
         }
 
+        // Apply filters
+        const filteredDetections = this.applyFilters(detections);
+
         return {
             // Basic stats
             totalSpecies: new Set(detections.map(d => d.common_name || d.scientificName)).size,
             totalDetections: detections.length,
+            filteredDetections: filteredDetections.length,
 
             // Time-based analytics
-            daily: this.analyzeDailyActivity(detections),
-            hourly: this.analyzeHourlyPattern(detections),
-            weekly: this.analyzeWeeklyPattern(detections),
+            daily: this.analyzeDailyActivity(filteredDetections),
+            hourly: this.analyzeHourlyPattern(filteredDetections),
+            weekly: this.analyzeWeeklyPattern(filteredDetections),
+            monthly: this.analyzeMonthlyPattern(filteredDetections),
 
             // Species analytics
-            topSpecies: this.getTopSpecies(detections),
-            allSpecies: this.getAllSpeciesStats(detections),
-            diversity: this.calculateDiversity(detections),
+            topSpecies: this.getTopSpecies(filteredDetections),
+            allSpecies: this.getAllSpeciesStats(filteredDetections),
+            diversity: this.calculateDiversity(filteredDetections),
+            rarest: this.getRarestSpecies(filteredDetections),
 
             // Recent activity
-            today: this.getTodayStats(detections),
-            recent: this.getRecentDetections(detections, 50),
+            today: this.getTodayStats(filteredDetections),
+            recent: this.getRecentDetections(filteredDetections, 50),
 
             // Insights
-            insights: this.generateInsights(detections)
+            insights: this.generateInsights(filteredDetections)
         };
+    },
+
+    /**
+     * Apply date range filters
+     */
+    applyFilters(detections) {
+        let filtered = [...detections];
+
+        // Date range filter
+        if (this.filters.dateRange !== 'all') {
+            const now = new Date();
+            const cutoff = new Date();
+
+            switch (this.filters.dateRange) {
+                case 'today':
+                    cutoff.setHours(0, 0, 0, 0);
+                    break;
+                case 'week':
+                    cutoff.setDate(cutoff.getDate() - 7);
+                    break;
+                case 'month':
+                    cutoff.setMonth(cutoff.getMonth() - 1);
+                    break;
+            }
+
+            filtered = filtered.filter(d => {
+                const date = new Date(d.begin_time || d.timestamp || d.date);
+                return date >= cutoff;
+            });
+        }
+
+        // Species name filter
+        if (this.filters.speciesFilter) {
+            const search = this.filters.speciesFilter.toLowerCase();
+            filtered = filtered.filter(d => {
+                const name = (d.common_name || d.scientificName || '').toLowerCase();
+                return name.includes(search);
+            });
+        }
+
+        return filtered;
+    },
+
+    /**
+     * Analyze monthly pattern
+     */
+    analyzeMonthlyPattern(detections) {
+        const months = Array(12).fill(0);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        detections.forEach(d => {
+            const date = new Date(d.begin_time || d.timestamp || d.date);
+            months[date.getMonth()]++;
+        });
+
+        return months.map((count, index) => ({ month: monthNames[index], count }));
+    },
+
+    /**
+     * Get rarest species
+     */
+    getRarestSpecies(detections) {
+        const topSpecies = this.getTopSpecies(detections);
+        return topSpecies.filter(s => s.count <= 3).slice(0, 10);
     },
 
     /**
@@ -315,13 +644,15 @@ const BirdAnalytics = {
         const hourly = this.analyzeHourlyPattern(detections);
         const topSpecies = this.getTopSpecies(detections);
         const daily = this.analyzeDailyActivity(detections);
+        const monthly = this.analyzeMonthlyPattern(detections);
 
         // Peak activity time
         const peakHour = hourly.reduce((max, h) => h.count > max.count ? h : max, hourly[0]);
         insights.push({
             type: 'peak-time',
+            icon: '🕐',
             title: 'Peak Activity Hour',
-            text: `Most bird activity occurs at ${peakHour.hour}:00 with ${peakHour.count} average detections.`
+            text: `Most bird activity occurs at ${peakHour.hour}:00 with ${peakHour.count} average detections. Set up your camera or sit by the window during this time!`
         });
 
         // Most common bird
@@ -330,8 +661,9 @@ const BirdAnalytics = {
             const percentage = ((top.count / detections.length) * 100).toFixed(1);
             insights.push({
                 type: 'common-species',
+                icon: '👑',
                 title: 'Most Common Visitor',
-                text: `${top.name} accounts for ${percentage}% of all detections (${top.count} total).`
+                text: `${top.name} is your backyard champion, accounting for ${percentage}% of all detections (${top.count} total sightings).`
             });
         }
 
@@ -340,13 +672,14 @@ const BirdAnalytics = {
         const prev7Days = daily.slice(-14, -7);
         const recentAvg = last7Days.reduce((sum, d) => sum + d.count, 0) / 7;
         const prevAvg = prev7Days.reduce((sum, d) => sum + d.count, 0) / 7;
-        const change = ((recentAvg - prevAvg) / prevAvg * 100).toFixed(1);
+        const change = prevAvg > 0 ? ((recentAvg - prevAvg) / prevAvg * 100).toFixed(1) : 0;
 
         if (Math.abs(change) > 10) {
             insights.push({
                 type: 'activity-trend',
+                icon: change > 0 ? '📈' : '📉',
                 title: 'Activity Trend',
-                text: `Bird activity has ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change)}% over the past week.`
+                text: `Bird activity has ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change)}% over the past week. ${change > 0 ? 'Great time for birding!' : 'Activity may pick up soon.'}`
             });
         }
 
@@ -354,8 +687,9 @@ const BirdAnalytics = {
         const uniqueSpecies = new Set(detections.map(d => d.common_name || d.scientificName)).size;
         insights.push({
             type: 'diversity',
+            icon: '🌈',
             title: 'Species Diversity',
-            text: `You've detected ${uniqueSpecies} different species. ${topSpecies.length >= 3 ? 'Great diversity!' : 'More species may appear as seasons change.'}`
+            text: `You've detected ${uniqueSpecies} different species in your backyard. ${uniqueSpecies >= 15 ? 'Excellent diversity!' : uniqueSpecies >= 8 ? 'Good variety!' : 'More species may appear as seasons change.'}`
         });
 
         // New species this week
@@ -366,8 +700,29 @@ const BirdAnalytics = {
         if (newSpecies.length > 0) {
             insights.push({
                 type: 'new-species',
-                title: 'New Visitors',
-                text: `${newSpecies.length} new species detected this week: ${newSpecies.map(s => s.name).join(', ')}.`
+                icon: '🆕',
+                title: 'New Visitors This Week',
+                text: `${newSpecies.length} new species detected: ${newSpecies.map(s => s.name).slice(0, 3).join(', ')}${newSpecies.length > 3 ? ' and more' : ''}.`
+            });
+        }
+
+        // Best month
+        const bestMonth = monthly.reduce((max, m) => m.count > max.count ? m : max, monthly[0]);
+        insights.push({
+            type: 'best-month',
+            icon: '📅',
+            title: 'Most Active Month',
+            text: `${bestMonth.month} is your busiest month with ${bestMonth.count} detections. Plan your bird watching activities accordingly!`
+        });
+
+        // Rare visitors
+        const rare = topSpecies.filter(s => s.count <= 3);
+        if (rare.length > 0) {
+            insights.push({
+                type: 'rare-visitors',
+                icon: '💎',
+                title: 'Rare Visitors',
+                text: `You've had ${rare.length} species with 3 or fewer sightings. Keep watching - you might see them again!`
             });
         }
 
@@ -381,12 +736,15 @@ const BirdAnalytics = {
         return {
             totalSpecies: 0,
             totalDetections: 0,
+            filteredDetections: 0,
             daily: [],
             hourly: [],
             weekly: [],
+            monthly: [],
             topSpecies: [],
             allSpecies: [],
             diversity: [],
+            rarest: [],
             today: { count: 0, species: 0 },
             recent: [],
             insights: []
@@ -408,6 +766,17 @@ const BirdAnalytics = {
 
         const peakHour = analytics.hourly.reduce((max, h) => h.count > max.count ? h : max, { hour: 0 });
         document.getElementById('most-active-time').textContent = `${peakHour.hour}:00`;
+
+        // Update filtered count
+        const filterInfo = document.getElementById('filter-info');
+        if (filterInfo) {
+            if (analytics.filteredDetections !== analytics.totalDetections) {
+                filterInfo.textContent = `Showing ${analytics.filteredDetections} of ${analytics.totalDetections} detections`;
+                filterInfo.style.display = 'block';
+            } else {
+                filterInfo.style.display = 'none';
+            }
+        }
 
         // Update current tab
         const activeTab = document.querySelector('.tab.active').dataset.tab;
@@ -432,6 +801,9 @@ const BirdAnalytics = {
             case 'activity':
                 this.renderActivity();
                 break;
+            case 'migration':
+                this.renderMigration();
+                break;
             case 'insights':
                 this.renderInsights();
                 break;
@@ -455,6 +827,9 @@ const BirdAnalytics = {
 
         // Species distribution chart
         this.renderDistributionChart(analytics.diversity);
+
+        // Monthly trend
+        this.renderMonthlyChart(analytics.monthly);
     },
 
     /**
@@ -482,6 +857,13 @@ const BirdAnalytics = {
                     backgroundColor: 'rgba(102, 126, 234, 0.1)',
                     tension: 0.4,
                     fill: true
+                }, {
+                    label: 'Unique Species',
+                    data: daily.map(d => d.speciesCount),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
                 }]
             },
             options: {
@@ -489,7 +871,8 @@ const BirdAnalytics = {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top'
                     }
                 },
                 scales: {
@@ -505,6 +888,17 @@ const BirdAnalytics = {
     },
 
     /**
+     * Get species image URL
+     */
+    getSpeciesImageUrl(speciesName) {
+        if (this.data.speciesImages[speciesName]) {
+            return this.data.speciesImages[speciesName];
+        }
+        // Return bird emoji as fallback
+        return null;
+    },
+
+    /**
      * Render top species list
      */
     renderTopSpeciesList(species) {
@@ -516,16 +910,20 @@ const BirdAnalytics = {
             return;
         }
 
-        container.innerHTML = species.map(s => `
-            <div class="species-item">
-                <div class="species-icon">🐦</div>
+        container.innerHTML = species.map(s => {
+            const imageUrl = this.getSpeciesImageUrl(s.name);
+            return `
+            <div class="species-item" onclick="BirdAnalytics.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
+                <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                    ${!imageUrl ? '🐦' : ''}
+                </div>
                 <div class="species-info">
                     <div class="species-name">${s.name}</div>
                     <div class="species-meta">${(s.avgConfidence * 100).toFixed(1)}% confidence</div>
                 </div>
                 <div class="species-count">${s.count}</div>
             </div>
-        `).join('');
+        `}).join('');
     },
 
     /**
@@ -610,6 +1008,49 @@ const BirdAnalytics = {
     },
 
     /**
+     * Render monthly chart
+     */
+    renderMonthlyChart(monthly) {
+        const canvas = document.getElementById('monthly-trend-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        if (this.charts.monthly) {
+            this.charts.monthly.destroy();
+        }
+
+        this.charts.monthly = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: monthly.map(m => m.month),
+                datasets: [{
+                    label: 'Detections',
+                    data: monthly.map(m => m.count),
+                    backgroundColor: '#10b981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    /**
      * Render species tab
      */
     renderSpecies() {
@@ -623,9 +1064,13 @@ const BirdAnalytics = {
             return;
         }
 
-        container.innerHTML = analytics.allSpecies.map(s => `
-            <div class="species-item">
-                <div class="species-icon">🐦</div>
+        container.innerHTML = analytics.allSpecies.map(s => {
+            const imageUrl = this.getSpeciesImageUrl(s.name);
+            return `
+            <div class="species-item" onclick="BirdAnalytics.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
+                <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                    ${!imageUrl ? '🐦' : ''}
+                </div>
                 <div class="species-info">
                     <div class="species-name">${s.name}</div>
                     <div class="species-meta">
@@ -636,7 +1081,7 @@ const BirdAnalytics = {
                 </div>
                 <div class="species-count">${s.count}</div>
             </div>
-        `).join('');
+        `}).join('');
     },
 
     /**
@@ -650,6 +1095,9 @@ const BirdAnalytics = {
 
         // Recent activity timeline
         this.renderTimeline(analytics.recent);
+
+        // Rare species
+        this.renderRareSpecies(analytics.rarest);
     },
 
     /**
@@ -725,6 +1173,132 @@ const BirdAnalytics = {
     },
 
     /**
+     * Render rare species
+     */
+    renderRareSpecies(rarest) {
+        const container = document.getElementById('rare-species-list');
+        if (!container) return;
+
+        if (rarest.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No rare species yet</p></div>';
+            return;
+        }
+
+        container.innerHTML = rarest.map(s => {
+            const imageUrl = this.getSpeciesImageUrl(s.name);
+            return `
+            <div class="species-item">
+                <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                    ${!imageUrl ? '💎' : ''}
+                </div>
+                <div class="species-info">
+                    <div class="species-name">${s.name}</div>
+                    <div class="species-meta">Last seen: ${s.lastSeen.toLocaleDateString()}</div>
+                </div>
+                <div class="species-count">${s.count}</div>
+            </div>
+        `}).join('');
+    },
+
+    /**
+     * Render migration tab
+     */
+    renderMigration() {
+        const migrations = this.data.migrations;
+        const container = document.getElementById('migration-calendar');
+
+        if (!container) return;
+
+        if (!migrations || migrations.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-icon">🦅</div><p>Not enough data to predict migration patterns</p></div>';
+            return;
+        }
+
+        // Group by status
+        const grouped = {
+            present: migrations.filter(m => m.prediction.status === 'present'),
+            expected: migrations.filter(m => m.prediction.status === 'expected'),
+            migrating: migrations.filter(m => m.prediction.status === 'migrating'),
+            departed: migrations.filter(m => m.prediction.status === 'departed')
+        };
+
+        const statusColors = {
+            present: '#10b981',
+            expected: '#3b82f6',
+            migrating: '#f59e0b',
+            departed: '#6b7280'
+        };
+
+        const statusLabels = {
+            present: '✅ Currently Present',
+            expected: '🔜 Expected Soon',
+            migrating: '🦅 Migrating Through',
+            departed: '📅 Departed'
+        };
+
+        let html = '';
+
+        for (const [status, items] of Object.entries(grouped)) {
+            if (items.length === 0) continue;
+
+            html += `
+                <div class="migration-section">
+                    <h3 class="migration-section-title" style="color: ${statusColors[status]}">
+                        ${statusLabels[status]} (${items.length})
+                    </h3>
+                    <div class="migration-grid">
+            `;
+
+            items.forEach(m => {
+                const imageUrl = this.getSpeciesImageUrl(m.species);
+                const confidenceColor = m.confidence === 'high' ? '#10b981' : m.confidence === 'medium' ? '#f59e0b' : '#6b7280';
+
+                html += `
+                    <div class="migration-card" style="border-left-color: ${statusColors[status]}">
+                        <div class="migration-card-header">
+                            <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                                ${!imageUrl ? '🐦' : ''}
+                            </div>
+                            <div class="migration-card-title">
+                                <div class="species-name">${m.species}</div>
+                                <div class="migration-pattern">${m.pattern}</div>
+                            </div>
+                        </div>
+                        <div class="migration-card-body">
+                            <p class="migration-message">${m.prediction.message}</p>
+                            <div class="migration-stats">
+                                <div class="migration-stat-item">
+                                    <span class="label">Detections:</span>
+                                    <span class="value">${m.detectionCount}</span>
+                                </div>
+                                <div class="migration-stat-item">
+                                    <span class="label">First seen:</span>
+                                    <span class="value">${m.firstSeen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                </div>
+                                <div class="migration-stat-item">
+                                    <span class="label">Last seen:</span>
+                                    <span class="value">${m.lastSeen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                </div>
+                                <div class="migration-stat-item">
+                                    <span class="label">Confidence:</span>
+                                    <span class="value" style="color: ${confidenceColor}">${m.confidence}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+    },
+
+    /**
      * Render insights tab
      */
     renderInsights() {
@@ -740,10 +1314,94 @@ const BirdAnalytics = {
 
         container.innerHTML = analytics.insights.map(insight => `
             <div class="insight-box">
-                <div class="insight-title">${insight.title}</div>
-                <div class="insight-text">${insight.text}</div>
+                <div class="insight-icon">${insight.icon}</div>
+                <div class="insight-content">
+                    <div class="insight-title">${insight.title}</div>
+                    <div class="insight-text">${insight.text}</div>
+                </div>
             </div>
         `).join('');
+    },
+
+    /**
+     * Show species detail modal
+     */
+    showSpeciesDetail(speciesName) {
+        const species = this.data.analytics.allSpecies.find(s => s.name === speciesName);
+        if (!species) return;
+
+        const migration = this.data.migrations?.find(m => m.species === speciesName);
+        const imageUrl = this.getSpeciesImageUrl(speciesName);
+
+        const modal = document.getElementById('species-modal');
+        if (!modal) return;
+
+        const modalBody = modal.querySelector('.modal-body');
+
+        modalBody.innerHTML = `
+            <div class="species-detail">
+                ${imageUrl ? `<img src="${imageUrl}" alt="${speciesName}" class="species-detail-image">` : ''}
+                <h2>${speciesName}</h2>
+
+                <div class="species-detail-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Detections</div>
+                        <div class="stat-value">${species.count}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Confidence</div>
+                        <div class="stat-value">${(species.avgConfidence * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">First Seen</div>
+                        <div class="stat-value">${species.firstSeen.toLocaleDateString()}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Last Seen</div>
+                        <div class="stat-value">${species.lastSeen.toLocaleDateString()}</div>
+                    </div>
+                </div>
+
+                ${migration ? `
+                    <div class="species-detail-section">
+                        <h3>Migration Pattern</h3>
+                        <p><strong>Pattern:</strong> ${migration.pattern}</p>
+                        <p><strong>Status:</strong> ${migration.prediction.message}</p>
+                        <p><strong>Confidence:</strong> ${migration.confidence}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+    },
+
+    /**
+     * Export data to CSV
+     */
+    exportToCSV() {
+        const { analytics } = this.data;
+
+        if (!analytics || analytics.allSpecies.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        let csv = 'Species,Total Detections,Avg Confidence,First Seen,Last Seen\n';
+
+        analytics.allSpecies.forEach(s => {
+            csv += `"${s.name}",${s.count},${(s.avgConfidence * 100).toFixed(1)}%,${s.firstSeen.toLocaleDateString()},${s.lastSeen.toLocaleDateString()}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bird-detections-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        console.log('✅ Exported data to CSV');
     },
 
     /**
@@ -775,6 +1433,39 @@ const BirdAnalytics = {
                 this.renderTab(tabName);
             });
         });
+    },
+
+    /**
+     * Set up filters
+     */
+    setupFilters() {
+        const dateRangeSelect = document.getElementById('date-range-filter');
+        if (dateRangeSelect) {
+            dateRangeSelect.addEventListener('change', (e) => {
+                this.filters.dateRange = e.target.value;
+                this.data.analytics = this.analyzeData();
+                this.updateDashboard();
+            });
+        }
+
+        const speciesSearch = document.getElementById('species-search');
+        if (speciesSearch) {
+            speciesSearch.addEventListener('input', (e) => {
+                this.filters.speciesFilter = e.target.value;
+                this.data.analytics = this.analyzeData();
+                this.updateDashboard();
+            });
+        }
+    },
+
+    /**
+     * Set up export
+     */
+    setupExport() {
+        const exportBtn = document.getElementById('export-csv-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportToCSV());
+        }
     },
 
     /**
