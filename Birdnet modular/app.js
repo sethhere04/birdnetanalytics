@@ -679,6 +679,45 @@ const BirdAnalytics = {
     },
 
     /**
+     * Get today's active species with details
+     */
+    getTodayActiveSpecies(detections) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayDetections = detections.filter(d => {
+            const date = this.parseDetectionDate(d);
+            return date >= today;
+        });
+
+        // Count detections per species today
+        const speciesCounts = {};
+        todayDetections.forEach(d => {
+            const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
+            if (!speciesCounts[species]) {
+                speciesCounts[species] = 0;
+            }
+            speciesCounts[species]++;
+        });
+
+        // Get species data with thumbnails from the main species list
+        const todaySpeciesList = Object.entries(speciesCounts).map(([speciesName, count]) => {
+            const speciesData = this.data.species.find(s =>
+                (s.commonName || s.common_name || s.scientificName) === speciesName
+            );
+
+            return {
+                name: speciesName,
+                count: count,
+                thumbnail: speciesData?.thumbnail_url || null
+            };
+        });
+
+        // Sort by count descending
+        return todaySpeciesList.sort((a, b) => b.count - a.count);
+    },
+
+    /**
      * Get recent detections
      */
     getRecentDetections(detections, limit = 50) {
@@ -1018,6 +1057,9 @@ const BirdAnalytics = {
         // Top species list
         this.renderTopSpeciesList(analytics.topSpecies.slice(0, 10));
 
+        // Today's active species
+        this.renderTodayActiveSpecies();
+
         // Hourly pattern chart
         this.renderHourlyChart(analytics.hourly);
 
@@ -1113,6 +1155,38 @@ const BirdAnalytics = {
                 <div class="species-count">${s.count}</div>
             </div>
         `}).join('');
+    },
+
+    /**
+     * Render today's active species grid
+     */
+    renderTodayActiveSpecies() {
+        const container = document.getElementById('today-species-grid');
+        if (!container) return;
+
+        const todaySpecies = this.getTodayActiveSpecies(this.data.detections);
+
+        if (todaySpecies.length === 0) {
+            container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">🦜</div><p>No species detected today yet</p></div>';
+            return;
+        }
+
+        container.innerHTML = todaySpecies.map(s => {
+            const thumbnail = s.thumbnail || this.getSpeciesImageUrl(s.name);
+            return `
+                <div class="today-species-card" onclick="BirdAnalytics.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
+                    ${thumbnail ?
+                        `<img src="${thumbnail}" alt="${s.name}" class="today-species-thumbnail" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="today-species-icon" style="display: none;">🐦</div>` :
+                        `<div class="today-species-icon">🐦</div>`
+                    }
+                    <div class="today-species-name">${s.name}</div>
+                    <div class="today-species-count">${s.count} detection${s.count > 1 ? 's' : ''}</div>
+                </div>
+            `;
+        }).join('');
+
+        console.log(`📊 Rendered ${todaySpecies.length} species active today`);
     },
 
     /**
