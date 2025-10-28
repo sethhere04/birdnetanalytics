@@ -685,10 +685,14 @@ const BirdAnalytics = {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        console.log(`🔍 Filtering detections for today (${today.toDateString()})`);
+
         const todayDetections = detections.filter(d => {
             const date = this.parseDetectionDate(d);
             return date >= today;
         });
+
+        console.log(`✅ Found ${todayDetections.length} detections today`);
 
         // Count detections per species today
         const speciesCounts = {};
@@ -699,6 +703,9 @@ const BirdAnalytics = {
             }
             speciesCounts[species]++;
         });
+
+        const uniqueSpeciesToday = Object.keys(speciesCounts).length;
+        console.log(`🐦 ${uniqueSpeciesToday} unique species detected today`);
 
         // Get species data with thumbnails from the main species list
         const todaySpeciesList = Object.entries(speciesCounts).map(([speciesName, count]) => {
@@ -1162,31 +1169,43 @@ const BirdAnalytics = {
      */
     renderTodayActiveSpecies() {
         const container = document.getElementById('today-species-grid');
-        if (!container) return;
-
-        const todaySpecies = this.getTodayActiveSpecies(this.data.detections);
-
-        if (todaySpecies.length === 0) {
-            container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">🦜</div><p>No species detected today yet</p></div>';
+        if (!container) {
+            console.warn('⚠️ today-species-grid container not found');
             return;
         }
 
-        container.innerHTML = todaySpecies.map(s => {
-            const thumbnail = s.thumbnail || this.getSpeciesImageUrl(s.name);
-            return `
-                <div class="today-species-card" onclick="BirdAnalytics.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
-                    ${thumbnail ?
-                        `<img src="${thumbnail}" alt="${s.name}" class="today-species-thumbnail" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="today-species-icon" style="display: none;">🐦</div>` :
-                        `<div class="today-species-icon">🐦</div>`
-                    }
-                    <div class="today-species-name">${s.name}</div>
-                    <div class="today-species-count">${s.count} detection${s.count > 1 ? 's' : ''}</div>
-                </div>
-            `;
-        }).join('');
+        try {
+            const detections = this.data.detections || [];
+            console.log(`📊 Checking today's species from ${detections.length} recent detections`);
 
-        console.log(`📊 Rendered ${todaySpecies.length} species active today`);
+            const todaySpecies = this.getTodayActiveSpecies(detections);
+            console.log(`✅ Found ${todaySpecies.length} species active today`);
+
+            if (todaySpecies.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">🦜</div><p>No species detected today yet</p></div>';
+                return;
+            }
+
+            container.innerHTML = todaySpecies.map(s => {
+                const thumbnail = s.thumbnail || this.getSpeciesImageUrl(s.name);
+                return `
+                    <div class="today-species-card" onclick="BirdAnalytics.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
+                        ${thumbnail ?
+                            `<img src="${thumbnail}" alt="${s.name}" class="today-species-thumbnail" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="today-species-icon" style="display: none;">🐦</div>` :
+                            `<div class="today-species-icon">🐦</div>`
+                        }
+                        <div class="today-species-name">${s.name}</div>
+                        <div class="today-species-count">${s.count} detection${s.count > 1 ? 's' : ''}</div>
+                    </div>
+                `;
+            }).join('');
+
+            console.log(`✅ Rendered ${todaySpecies.length} species active today`);
+        } catch (error) {
+            console.error('❌ Error rendering today\'s species:', error);
+            container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><p>Error loading today\'s species</p></div>';
+        }
     },
 
     /**
