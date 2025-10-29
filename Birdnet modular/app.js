@@ -3,6 +3,8 @@
  * API Base: http://192.168.68.129:8080/api/v2/
  */
 
+console.log('🚀 app.js loaded - starting BirdAnalytics initialization');
+
 const BirdAnalytics = {
     // Configuration
     config: {
@@ -1760,8 +1762,14 @@ const BirdAnalytics = {
 };
 
 // Initialize app when DOM is ready
+console.log('📋 Document ready state:', document.readyState);
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => BirdAnalytics.init());
+    console.log('⏳ Waiting for DOMContentLoaded...');
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('✅ DOMContentLoaded fired');
+        BirdAnalytics.init();
+    });
 } else {
+    console.log('✅ DOM already loaded, initializing now');
     BirdAnalytics.init();
 }
