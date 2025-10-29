@@ -70,15 +70,22 @@
         </div>
 
         <!-- Overview Tab -->
-        <div id="tab-overview" class="tab-content">
+        <div id="overview-tab" class="tab-content active">
             <div class="grid">
+                <!-- Comparison Cards (NEW) -->
+                <div class="col-12">
+                    <div id="comparison-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
                 <!-- Daily Activity Chart -->
                 <div class="col-8">
                     <div class="card">
                         <div class="card-header">
                             <div>
                                 <div class="card-title">Daily Activity Trend</div>
-                                <div class="card-subtitle">Detections over the last 30 days</div>
+                                <div class="card-subtitle">Unique species per day (last 30 days)</div>
                             </div>
                         </div>
                         <div class="chart-container-large">
@@ -120,6 +127,21 @@
                     </div>
                 </div>
 
+                <!-- Diversity Metrics (NEW) -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📊 Diversity Metrics</div>
+                                <div class="card-subtitle">Statistical measures of species diversity</div>
+                            </div>
+                        </div>
+                        <div id="diversity-metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; padding: 1rem;">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Hourly Pattern -->
                 <div class="col-6">
                     <div class="card">
@@ -140,8 +162,8 @@
                     <div class="card">
                         <div class="card-header">
                             <div>
-                                <div class="card-title">Species Diversity</div>
-                                <div class="card-subtitle">Distribution of detections</div>
+                                <div class="card-title">Species Distribution</div>
+                                <div class="card-subtitle">Top 10 species by detections</div>
                             </div>
                         </div>
                         <div class="chart-container">
@@ -168,14 +190,60 @@
         </div>
 
         <!-- Species Tab -->
-        <div id="tab-species" class="tab-content" style="display: none;">
+        <div id="species-tab" class="tab-content" style="display: none;">
             <div class="grid">
+                <!-- Detection Calendar Heatmap (NEW) -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📅 Detection Calendar</div>
+                                <div class="card-subtitle">Detection frequency over the last 90 days</div>
+                            </div>
+                        </div>
+                        <div class="chart-container-large">
+                            <canvas id="calendar-heatmap-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confidence Distribution (NEW) -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🎯 Confidence Distribution</div>
+                                <div class="card-subtitle">Detection confidence levels</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="confidence-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Year-over-Year Comparison (NEW) -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📈 Year-over-Year</div>
+                                <div class="card-subtitle">Species and detections by year</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="year-over-year-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Species List -->
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">All Detected Species</div>
                         </div>
-                        <div class="species-list" id="all-species-list">
+                        <div id="all-species-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; padding: 1rem;">
                             <div class="loading">
                                 <div class="spinner"></div>
                                 <p>Loading...</p>
@@ -187,7 +255,7 @@
         </div>
 
         <!-- Migration Tab -->
-        <div id="tab-migration" class="tab-content" style="display: none;">
+        <div id="migration-tab" class="tab-content" style="display: none;">
             <div class="grid">
                 <div class="col-12">
                     <div class="card">
@@ -209,7 +277,7 @@
         </div>
 
         <!-- Activity Tab -->
-        <div id="tab-activity" class="tab-content" style="display: none;">
+        <div id="activity-tab" class="tab-content" style="display: none;">
             <div class="grid">
                 <div class="col-12">
                     <div class="card">
@@ -218,6 +286,21 @@
                         </div>
                         <div class="chart-container-large">
                             <canvas id="weekly-heatmap-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hour × Day Heatmap (NEW) -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🕐 Hour × Day Activity Pattern</div>
+                                <div class="card-subtitle">Activity by day of week and time of day</div>
+                            </div>
+                        </div>
+                        <div class="chart-container-large">
+                            <canvas id="hour-day-heatmap-chart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -253,14 +336,14 @@
         </div>
 
         <!-- Insights Tab -->
-        <div id="tab-insights" class="tab-content" style="display: none;">
+        <div id="insights-tab" class="tab-content" style="display: none;">
             <div class="grid">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">AI-Powered Insights</div>
                         </div>
-                        <div id="insights-container">
+                        <div id="insights-list" style="display: grid; gap: 1rem; padding: 1rem;">
                             <div class="loading">
                                 <div class="spinner"></div>
                                 <p>Generating insights...</p>
@@ -272,7 +355,7 @@
         </div>
 
         <!-- Feeding Tab -->
-        <div id="tab-feeding" class="tab-content" style="display: none;">
+        <div id="feeding-tab" class="tab-content" style="display: none;">
             <div class="grid">
                 <!-- Seasonal Recommendations -->
                 <div class="col-12">
@@ -280,10 +363,10 @@
                         <div class="card-header">
                             <div>
                                 <div class="card-title">🌻 Seasonal Feeding Recommendations</div>
-                                <div class="card-subtitle" id="feeding-season-subtitle">Best foods for this time of year</div>
+                                <div class="card-subtitle">Best foods for this time of year</div>
                             </div>
                         </div>
-                        <div id="seasonal-feeding-recommendations">
+                        <div id="seasonal-feeding">
                             <div class="loading">
                                 <div class="spinner"></div>
                                 <p>Loading recommendations...</p>
@@ -312,15 +395,23 @@
 
     <!-- Species Detail Modal -->
     <div id="species-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="document.getElementById('species-modal').style.display='none'">&times;</span>
-            <div class="modal-body">
-                <!-- Content populated by JavaScript -->
-            </div>
+        <div class="species-modal-content">
+            <!-- Content populated by JavaScript -->
         </div>
     </div>
 
-    <!-- Application Scripts -->
-    <script src="app.js?v=2024102902"></script>
+    <!-- Loading Indicator -->
+    <div id="loading" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center;">
+            <div class="spinner" style="width: 48px; height: 48px; margin: 0 auto 1rem;"></div>
+            <p>Loading bird data...</p>
+        </div>
+    </div>
+
+    <!-- Error Container -->
+    <div id="error-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 400px;"></div>
+
+    <!-- Application Scripts - ES6 Modules -->
+    <script type="module" src="js/main.js?v=2024102903"></script>
 </body>
 </html>

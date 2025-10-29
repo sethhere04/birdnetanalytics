@@ -323,6 +323,171 @@ export function generateInsightsFromSummary(species, detections) {
 }
 
 /**
+ * Calculate Shannon Diversity Index
+ * H = -Σ(pi * ln(pi)) where pi is the proportion of species i
+ * Higher values indicate greater diversity
+ */
+export function calculateShannonIndex(species) {
+    if (species.length === 0) return 0;
+
+    const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
+    if (totalDetections === 0) return 0;
+
+    let shannonIndex = 0;
+    species.forEach(s => {
+        const count = s.detections || s.count || 0;
+        if (count > 0) {
+            const proportion = count / totalDetections;
+            shannonIndex -= proportion * Math.log(proportion);
+        }
+    });
+
+    return shannonIndex;
+}
+
+/**
+ * Calculate Simpson's Diversity Index
+ * D = 1 - Σ(pi²) where pi is the proportion of species i
+ * Values range from 0 to 1, where 1 indicates maximum diversity
+ */
+export function calculateSimpsonIndex(species) {
+    if (species.length === 0) return 0;
+
+    const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
+    if (totalDetections === 0) return 0;
+
+    let simpsonIndex = 0;
+    species.forEach(s => {
+        const count = s.detections || s.count || 0;
+        if (count > 0) {
+            const proportion = count / totalDetections;
+            simpsonIndex += proportion * proportion;
+        }
+    });
+
+    return 1 - simpsonIndex;
+}
+
+/**
+ * Calculate species evenness (Pielou's J)
+ * J = H / ln(S) where H is Shannon index and S is number of species
+ * Values range from 0 to 1, where 1 indicates perfect evenness
+ */
+export function calculateEvenness(species) {
+    if (species.length <= 1) return 1;
+
+    const shannonIndex = calculateShannonIndex(species);
+    const maxDiversity = Math.log(species.length);
+
+    return maxDiversity > 0 ? shannonIndex / maxDiversity : 0;
+}
+
+/**
+ * Get comprehensive diversity metrics
+ */
+export function getDiversityMetrics(species) {
+    const shannonIndex = calculateShannonIndex(species);
+    const simpsonIndex = calculateSimpsonIndex(species);
+    const evenness = calculateEvenness(species);
+
+    // Interpret Shannon Index
+    let shannonInterpretation = 'No diversity';
+    if (shannonIndex > 3.5) shannonInterpretation = 'Very high diversity';
+    else if (shannonIndex > 3) shannonInterpretation = 'High diversity';
+    else if (shannonIndex > 2) shannonInterpretation = 'Moderate diversity';
+    else if (shannonIndex > 1) shannonInterpretation = 'Low diversity';
+
+    // Interpret Evenness
+    let evennessInterpretation = 'Very uneven';
+    if (evenness > 0.8) evennessInterpretation = 'Very even';
+    else if (evenness > 0.6) evennessInterpretation = 'Moderately even';
+    else if (evenness > 0.4) evennessInterpretation = 'Somewhat uneven';
+
+    return {
+        shannon: {
+            value: shannonIndex.toFixed(2),
+            interpretation: shannonInterpretation,
+            description: 'Shannon Index measures species diversity considering both richness and evenness'
+        },
+        simpson: {
+            value: simpsonIndex.toFixed(2),
+            interpretation: simpsonIndex > 0.8 ? 'High' : simpsonIndex > 0.5 ? 'Moderate' : 'Low',
+            description: 'Simpson Index measures the probability that two randomly selected individuals belong to different species'
+        },
+        evenness: {
+            value: evenness.toFixed(2),
+            interpretation: evennessInterpretation,
+            description: 'Evenness measures how similar species abundances are'
+        },
+        richness: {
+            value: species.length,
+            description: 'Total number of unique species detected'
+        }
+    };
+}
+
+/**
+ * Calculate comparison stats (today vs yesterday, this week vs last week, etc.)
+ */
+export function calculateComparisonStats(detections, species) {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - 7);
+    const lastWeekStart = new Date(weekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+    // Today vs Yesterday
+    const todayDetections = detections.filter(d => {
+        const date = parseDetectionDate(d);
+        return date >= todayStart;
+    });
+    const yesterdayDetections = detections.filter(d => {
+        const date = parseDetectionDate(d);
+        return date >= yesterdayStart && date < todayStart;
+    });
+
+    const todaySpecies = new Set(todayDetections.map(d => d.commonName || d.common_name || d.scientificName));
+    const yesterdaySpecies = new Set(yesterdayDetections.map(d => d.commonName || d.common_name || d.scientificName));
+
+    // This week vs last week (approximation from recent detections)
+    const thisWeekDetections = detections.filter(d => {
+        const date = parseDetectionDate(d);
+        return date >= weekStart;
+    });
+    const lastWeekDetections = detections.filter(d => {
+        const date = parseDetectionDate(d);
+        return date >= lastWeekStart && date < weekStart;
+    });
+
+    return {
+        today: {
+            detections: todayDetections.length,
+            species: todaySpecies.size
+        },
+        yesterday: {
+            detections: yesterdayDetections.length,
+            species: yesterdaySpecies.size
+        },
+        thisWeek: {
+            detections: thisWeekDetections.length,
+            species: new Set(thisWeekDetections.map(d => d.commonName || d.common_name || d.scientificName)).size
+        },
+        lastWeek: {
+            detections: lastWeekDetections.length,
+            species: new Set(lastWeekDetections.map(d => d.commonName || d.common_name || d.scientificName)).size
+        },
+        allTime: {
+            detections: species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0),
+            species: species.length
+        }
+    };
+}
+
+/**
  * Get empty analytics structure
  */
 function getEmptyAnalytics() {
