@@ -31,6 +31,57 @@ const BirdAnalytics = {
         speciesFilter: ''
     },
 
+    // Bird Food Preferences Database
+    birdFoodDatabase: {
+        // Cardinals, Grosbeaks, Buntings
+        'Northern Cardinal': { foods: ['Sunflower Seeds', 'Safflower Seeds', 'Cracked Corn', 'Peanuts', 'Millet'], feeder: ['Hopper', 'Platform', 'Tube'], diet: 'Seeds & Insects' },
+        'Rose-breasted Grosbeak': { foods: ['Sunflower Seeds', 'Safflower Seeds', 'Fruit'], feeder: ['Hopper', 'Platform'], diet: 'Seeds & Insects' },
+        'Indigo Bunting': { foods: ['Nyjer Seed', 'Millet', 'Sunflower Chips'], feeder: ['Tube', 'Platform'], diet: 'Seeds & Insects' },
+
+        // Finches
+        'American Goldfinch': { foods: ['Nyjer Seed', 'Sunflower Chips', 'Millet'], feeder: ['Tube', 'Mesh Sock'], diet: 'Seeds' },
+        'House Finch': { foods: ['Sunflower Seeds', 'Nyjer Seed', 'Millet'], feeder: ['Tube', 'Platform'], diet: 'Seeds & Fruit' },
+        'Purple Finch': { foods: ['Sunflower Seeds', 'Nyjer Seed', 'Fruit'], feeder: ['Tube', 'Platform'], diet: 'Seeds & Fruit' },
+
+        // Chickadees & Titmice
+        'Black-capped Chickadee': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet', 'Mealworms'], feeder: ['Tube', 'Suet Cage', 'Hopper'], diet: 'Seeds & Insects' },
+        'Carolina Chickadee': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet', 'Mealworms'], feeder: ['Tube', 'Suet Cage', 'Hopper'], diet: 'Seeds & Insects' },
+        'Tufted Titmouse': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet'], feeder: ['Tube', 'Hopper', 'Suet Cage'], diet: 'Seeds & Insects' },
+
+        // Woodpeckers
+        'Downy Woodpecker': { foods: ['Suet', 'Peanuts', 'Sunflower Seeds', 'Mealworms'], feeder: ['Suet Cage', 'Peanut Feeder'], diet: 'Insects & Suet' },
+        'Hairy Woodpecker': { foods: ['Suet', 'Peanuts', 'Sunflower Seeds'], feeder: ['Suet Cage', 'Peanut Feeder'], diet: 'Insects & Suet' },
+        'Red-bellied Woodpecker': { foods: ['Suet', 'Peanuts', 'Sunflower Seeds', 'Fruit'], feeder: ['Suet Cage', 'Hopper'], diet: 'Insects & Fruit' },
+        'Pileated Woodpecker': { foods: ['Suet', 'Peanuts'], feeder: ['Suet Cage', 'Large Platform'], diet: 'Insects' },
+
+        // Jays & Crows
+        'Blue Jay': { foods: ['Peanuts', 'Sunflower Seeds', 'Corn'], feeder: ['Platform', 'Hopper'], diet: 'Nuts & Seeds' },
+        'American Crow': { foods: ['Peanuts', 'Corn', 'Suet'], feeder: ['Ground', 'Large Platform'], diet: 'Omnivore' },
+
+        // Sparrows
+        'White-throated Sparrow': { foods: ['Millet', 'Cracked Corn', 'Sunflower Chips'], feeder: ['Ground', 'Platform'], diet: 'Seeds' },
+        'Song Sparrow': { foods: ['Millet', 'Sunflower Chips', 'Cracked Corn'], feeder: ['Ground', 'Platform'], diet: 'Seeds & Insects' },
+        'House Sparrow': { foods: ['Millet', 'Sunflower Seeds', 'Cracked Corn'], feeder: ['Platform', 'Hopper'], diet: 'Seeds' },
+        'Chipping Sparrow': { foods: ['Millet', 'Sunflower Chips', 'Nyjer Seed'], feeder: ['Ground', 'Platform'], diet: 'Seeds & Insects' },
+
+        // Nuthatches
+        'White-breasted Nuthatch': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet'], feeder: ['Tube', 'Suet Cage', 'Hopper'], diet: 'Insects & Seeds' },
+        'Red-breasted Nuthatch': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet'], feeder: ['Tube', 'Suet Cage'], diet: 'Insects & Seeds' },
+
+        // Wrens & Thrushes
+        'Carolina Wren': { foods: ['Suet', 'Mealworms', 'Peanuts'], feeder: ['Suet Cage', 'Platform'], diet: 'Insects' },
+        'American Robin': { foods: ['Mealworms', 'Fruit', 'Suet'], feeder: ['Platform', 'Ground'], diet: 'Insects & Fruit' },
+        'Eastern Bluebird': { foods: ['Mealworms', 'Suet', 'Fruit'], feeder: ['Mealworm Feeder', 'Platform'], diet: 'Insects & Fruit' },
+
+        // Doves
+        'Mourning Dove': { foods: ['Millet', 'Cracked Corn', 'Sunflower Seeds'], feeder: ['Ground', 'Platform'], diet: 'Seeds' },
+
+        // Blackbirds
+        'Red-winged Blackbird': { foods: ['Cracked Corn', 'Millet', 'Sunflower Seeds'], feeder: ['Ground', 'Platform'], diet: 'Seeds & Insects' },
+        'Common Grackle': { foods: ['Cracked Corn', 'Sunflower Seeds'], feeder: ['Ground', 'Platform'], diet: 'Omnivore' },
+        'Brown-headed Cowbird': { foods: ['Millet', 'Cracked Corn'], feeder: ['Ground', 'Platform'], diet: 'Seeds & Insects' }
+    },
+
     /**
      * Parse detection date/time from API format
      * API format: { "date": "2025-10-27", "time": "10:53:12" }
@@ -1048,6 +1099,9 @@ const BirdAnalytics = {
             case 'migration':
                 this.renderMigration();
                 break;
+            case 'feeding':
+                this.renderFeeding();
+                break;
             case 'insights':
                 this.renderInsights();
                 break;
@@ -1605,6 +1659,276 @@ const BirdAnalytics = {
                 </div>
             </div>
         `).join('');
+    },
+
+    /**
+     * Render feeding recommendations tab
+     */
+    renderFeeding() {
+        this.renderSeasonalFeeding();
+        this.renderSpeciesFeedingGuide();
+    },
+
+    /**
+     * Get current season
+     */
+    getCurrentSeason() {
+        const month = new Date().getMonth();
+        if (month >= 2 && month <= 4) return 'spring';
+        if (month >= 5 && month <= 7) return 'summer';
+        if (month >= 8 && month <= 10) return 'fall';
+        return 'winter';
+    },
+
+    /**
+     * Get seasonal feeding recommendations
+     */
+    getSeasonalRecommendations() {
+        const season = this.getCurrentSeason();
+        const recommendations = {
+            spring: {
+                title: 'Spring Feeding (March - May)',
+                icon: '🌸',
+                badge: 'season-spring',
+                description: 'Spring is nesting and migration time. Birds need protein-rich foods to support breeding and prepare for migration.',
+                foods: [
+                    { name: 'Mealworms', reason: 'High protein for nesting birds and chicks' },
+                    { name: 'Suet', reason: 'Energy for migrating birds' },
+                    { name: 'Sunflower Seeds', reason: 'Fat and protein for breeding season' },
+                    { name: 'Nyjer Seed', reason: 'Essential for finches raising young' },
+                    { name: 'Fruit', reason: 'Natural food for early migrants like robins' }
+                ],
+                tips: [
+                    'Offer live mealworms to attract bluebirds and wrens',
+                    'Keep feeders clean to prevent disease during crowded migration',
+                    'Add a water source - birds need it for drinking and bathing',
+                    'Reduce feeding in late spring when natural food becomes abundant'
+                ]
+            },
+            summer: {
+                title: 'Summer Feeding (June - August)',
+                icon: '☀️',
+                badge: 'season-summer',
+                description: 'Many birds switch to natural insects in summer, but feeders still help parents feeding chicks.',
+                foods: [
+                    { name: 'Nyjer Seed', reason: 'Goldfinches still love it year-round' },
+                    { name: 'Sunflower Chips', reason: 'No shells = less mess in summer heat' },
+                    { name: 'Fruit', reason: 'Attracts orioles, tanagers, and catbirds' },
+                    { name: 'Sugar Water', reason: 'For hummingbirds (change every 2-3 days)' },
+                    { name: 'Mealworms', reason: 'Protein boost for parent birds' }
+                ],
+                tips: [
+                    'Change water and nectar frequently in hot weather',
+                    'Clean feeders weekly to prevent mold and bacteria',
+                    'Use smaller quantities of seed to keep it fresh',
+                    'Provide shade for feeders if possible',
+                    'Keep suet in the refrigerator or use no-melt formulas'
+                ]
+            },
+            fall: {
+                title: 'Fall Feeding (September - November)',
+                icon: '🍂',
+                badge: 'season-fall',
+                description: 'Fall migration brings new visitors. Birds need high-fat foods to fuel their journeys south.',
+                foods: [
+                    { name: 'Sunflower Seeds', reason: 'High fat content for migration energy' },
+                    { name: 'Peanuts', reason: 'Excellent fat and protein source' },
+                    { name: 'Suet', reason: 'Essential high-energy food for migrants' },
+                    { name: 'Nyjer Seed', reason: 'Migrating finches fuel up' },
+                    { name: 'Millet', reason: 'Attracts sparrows and juncos returning for winter' }
+                ],
+                tips: [
+                    'Stock up on food for winter - birds are scouting feeding sites',
+                    'Add suet feeders back after summer break',
+                    'Watch for uncommon migrants passing through',
+                    'Keep feeders full to help birds build fat reserves',
+                    'Clean feeders before winter residents arrive'
+                ]
+            },
+            winter: {
+                title: 'Winter Feeding (December - February)',
+                icon: '❄️',
+                badge: 'season-winter',
+                description: 'Winter is the most critical feeding time. Birds rely heavily on feeders when natural food is scarce.',
+                foods: [
+                    { name: 'Black Oil Sunflower Seeds', reason: 'Maximum calories with thin shells' },
+                    { name: 'Suet', reason: 'Critical fat source for cold weather' },
+                    { name: 'Peanuts', reason: 'High-energy food woodpeckers love' },
+                    { name: 'Safflower Seeds', reason: 'Cardinals love them, squirrels don\'t' },
+                    { name: 'Cracked Corn', reason: 'Ground feeders like juncos and doves' }
+                ],
+                tips: [
+                    'Keep feeders full - birds depend on reliable food sources',
+                    'Offer suet in multiple locations for woodpeckers',
+                    'Shovel areas under feeders after snowfall',
+                    'Provide fresh water with a heated birdbath',
+                    'Feed in the morning and evening when birds need energy most'
+                ]
+            }
+        };
+
+        return recommendations[season];
+    },
+
+    /**
+     * Render seasonal feeding recommendations
+     */
+    renderSeasonalFeeding() {
+        const container = document.getElementById('seasonal-feeding-recommendations');
+        if (!container) return;
+
+        const recommendations = this.getSeasonalRecommendations();
+        const season = this.getCurrentSeason();
+
+        // Update subtitle
+        const subtitle = document.getElementById('feeding-season-subtitle');
+        if (subtitle) {
+            subtitle.textContent = `${recommendations.title} - Recommendations for your birds`;
+        }
+
+        container.innerHTML = `
+            <div class="feeding-card">
+                <div class="feeding-card-title">
+                    <span class="feeding-card-icon">${recommendations.icon}</span>
+                    ${recommendations.title}
+                    <span class="season-badge ${recommendations.badge}">${season.toUpperCase()}</span>
+                </div>
+                <div class="feeding-card-content">
+                    <p><strong>${recommendations.description}</strong></p>
+
+                    <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--primary);">🥜 Best Foods for ${season.charAt(0).toUpperCase() + season.slice(1)}</h4>
+                    ${recommendations.foods.map(food => `
+                        <div class="food-category">
+                            <div class="food-category-title">${food.name}</div>
+                            <div>${food.reason}</div>
+                        </div>
+                    `).join('')}
+
+                    <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--primary);">💡 ${season.charAt(0).toUpperCase() + season.slice(1)} Feeding Tips</h4>
+                    <ul>
+                        ${recommendations.tips.map(tip => `<li>${tip}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+
+        console.log(`✅ Rendered ${season} seasonal feeding recommendations`);
+    },
+
+    /**
+     * Render species-specific feeding guide
+     */
+    renderSpeciesFeedingGuide() {
+        const container = document.getElementById('species-feeding-guide');
+        if (!container) return;
+
+        const topSpecies = this.data.analytics?.topSpecies || [];
+
+        // Filter species that have feeding data
+        const speciesWithFeeding = topSpecies.filter(s =>
+            this.birdFoodDatabase[s.name]
+        ).slice(0, 12); // Show top 12 species with feeding data
+
+        if (speciesWithFeeding.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No feeding recommendations available for your detected species yet</p></div>';
+            return;
+        }
+
+        // Aggregate all recommended foods
+        const allFoods = {};
+        const allFeeders = {};
+
+        speciesWithFeeding.forEach(species => {
+            const feedingData = this.birdFoodDatabase[species.name];
+            feedingData.foods.forEach(food => {
+                if (!allFoods[food]) allFoods[food] = [];
+                allFoods[food].push(species.name);
+            });
+            feedingData.feeder.forEach(feeder => {
+                if (!allFeeders[feeder]) allFeeders[feeder] = [];
+                allFeeders[feeder].push(species.name);
+            });
+        });
+
+        container.innerHTML = `
+            <div class="feeding-grid">
+                <!-- Food Summary -->
+                <div class="feeding-card">
+                    <div class="feeding-card-title">
+                        <span class="feeding-card-icon">🌻</span>
+                        Recommended Foods for Your Birds
+                    </div>
+                    <div class="feeding-card-content">
+                        <p style="margin-bottom: 1rem;">Based on the ${speciesWithFeeding.length} species you're detecting:</p>
+                        ${Object.entries(allFoods)
+                            .sort((a, b) => b[1].length - a[1].length)
+                            .slice(0, 8)
+                            .map(([food, birds]) => `
+                                <div class="food-category">
+                                    <div class="food-category-title">${food}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-light);">
+                                        Attracts ${birds.length} of your species
+                                    </div>
+                                </div>
+                            `).join('')}
+                    </div>
+                </div>
+
+                <!-- Feeder Types -->
+                <div class="feeding-card">
+                    <div class="feeding-card-title">
+                        <span class="feeding-card-icon">🏠</span>
+                        Recommended Feeder Types
+                    </div>
+                    <div class="feeding-card-content">
+                        <p style="margin-bottom: 1rem;">Best feeders for your backyard:</p>
+                        ${Object.entries(allFeeders)
+                            .sort((a, b) => b[1].length - a[1].length)
+                            .map(([feeder, birds]) => `
+                                <div class="food-category">
+                                    <div class="food-category-title">${feeder} Feeder</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-light);">
+                                        For ${birds.length} of your species
+                                    </div>
+                                </div>
+                            `).join('')}
+                    </div>
+                </div>
+
+                <!-- Species-Specific Guide -->
+                ${speciesWithFeeding.slice(0, 10).map(species => {
+                    const feedingData = this.birdFoodDatabase[species.name];
+                    return `
+                        <div class="feeding-card">
+                            <div class="feeding-card-title">
+                                <span class="feeding-card-icon">🐦</span>
+                                ${species.name}
+                            </div>
+                            <div class="feeding-card-content">
+                                <p><strong>Diet:</strong> ${feedingData.diet}</p>
+                                <div class="food-category">
+                                    <div class="food-category-title">Favorite Foods</div>
+                                    <div class="food-list">
+                                        ${feedingData.foods.map(food => `<span class="food-tag">${food}</span>`).join('')}
+                                    </div>
+                                </div>
+                                <div class="food-category">
+                                    <div class="food-category-title">Feeder Types</div>
+                                    <div style="font-size: 0.875rem;">
+                                        ${feedingData.feeder.join(', ')}
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.5rem;">
+                                    ${species.count} detections in your yard
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+        console.log(`✅ Rendered feeding guide for ${speciesWithFeeding.length} species`);
     },
 
     /**

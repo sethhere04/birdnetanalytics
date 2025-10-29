@@ -581,6 +581,95 @@
             color: var(--text-light);
         }
 
+        /* Feeding Recommendations */
+        .feeding-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .feeding-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .feeding-card-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feeding-card-icon {
+            font-size: 1.5rem;
+        }
+
+        .feeding-card-content {
+            font-size: 0.875rem;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .feeding-card-content ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .feeding-card-content li {
+            margin: 0.25rem 0;
+        }
+
+        .food-category {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .food-category-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .food-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .food-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .season-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .season-spring { background: #86efac; color: #166534; }
+        .season-summer { background: #fde047; color: #854d0e; }
+        .season-fall { background: #fb923c; color: #7c2d12; }
+        .season-winter { background: #93c5fd; color: #1e40af; }
+
         /* Modal */
         .modal {
             display: none;
@@ -752,6 +841,7 @@
             <button class="tab" data-tab="species">Species</button>
             <button class="tab" data-tab="migration">🦅 Migration</button>
             <button class="tab" data-tab="activity">Activity Patterns</button>
+            <button class="tab" data-tab="feeding">🌻 Feeding</button>
             <button class="tab" data-tab="insights">Insights</button>
         </div>
 
@@ -956,6 +1046,44 @@
                 </div>
             </div>
         </div>
+
+        <!-- Feeding Tab -->
+        <div id="tab-feeding" class="tab-content" style="display: none;">
+            <div class="grid">
+                <!-- Seasonal Recommendations -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🌻 Seasonal Feeding Recommendations</div>
+                                <div class="card-subtitle" id="feeding-season-subtitle">Best foods for this time of year</div>
+                            </div>
+                        </div>
+                        <div id="seasonal-feeding-recommendations">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading recommendations...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Species-Specific Feeding Guide -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🐦 Feeding Guide for Your Birds</div>
+                        </div>
+                        <div id="species-feeding-guide">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading species preferences...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Species Detail Modal -->
@@ -969,6 +1097,6 @@
     </div>
 
     <!-- Application Scripts -->
-    <script src="app.js?v=2024102901"></script>
+    <script src="app.js?v=2024102902"></script>
 </body>
 </html>
