@@ -2,7 +2,7 @@
  * Main Application Module - Coordinates all other modules
  */
 
-import { API_CONFIG, fetchSpecies, fetchDetections } from './api.js';
+import { API_CONFIG, fetchSpecies, fetchDetections, parseDetectionDate } from './api.js';
 import * as Analytics from './analytics.js';
 import * as UIRender from './ui-render.js';
 
@@ -16,13 +16,15 @@ const AppState = {
         species: [],
         detections: [],
         analytics: null,
-        speciesImages: {}
+        speciesImages: {},
+        lastDetectionTime: null  // Track most recent detection for incremental loading
     },
     filters: {
         dateRange: 'all',
         speciesFilter: ''
     },
-    currentTab: 'overview'
+    currentTab: 'overview',
+    isInitialLoad: true  // Flag to track if this is the first load
 };
 
 /**
@@ -125,34 +127,80 @@ function switchTab(tabName) {
 }
 
 /**
- * Load data from API
+ * Load data from API with incremental loading support
  */
 async function loadData() {
     console.log('📡 Fetching data from BirdNET-Go API...');
     UIRender.showLoading();
 
     try {
-        // Fetch species summary and recent detections in parallel
-        const [species, detections] = await Promise.all([
-            fetchSpecies(),
-            fetchDetections()
-        ]);
+        let detections;
+        let species;
 
-        console.log(`✅ Loaded ${species.length} species and ${detections.length} recent detections`);
+        if (AppState.isInitialLoad) {
+            // Initial load: Fetch ALL available detections (paginated)
+            console.log('🔄 Initial load - fetching all available detections...');
+            const [speciesData, allDetections] = await Promise.all([
+                fetchSpecies(),
+                fetchDetections()  // Fetches all pages
+            ]);
 
-        // Debug: Log species count changes
-        if (AppState.data.species.length > 0 && species.length !== AppState.data.species.length) {
-            console.warn(`⚠️ Species count changed from ${AppState.data.species.length} to ${species.length}`);
-            console.log('Previous species:', AppState.data.species.map(s => s.commonName || s.common_name));
-            console.log('New species:', species.map(s => s.commonName || s.common_name));
+            species = speciesData;
+            AppState.data.species = species;
+            detections = allDetections;
+            AppState.isInitialLoad = false;
+
+            console.log(`✅ Initial load: ${species.length} species and ${detections.length} total detections`);
+        } else {
+            // Incremental load: Only fetch NEW detections since last check
+            console.log('🔄 Incremental refresh - fetching only new detections...');
+            const [speciesData, newDetections] = await Promise.all([
+                fetchSpecies(),
+                fetchDetections(AppState.data.lastDetectionTime)  // Pass last detection time
+            ]);
+
+            species = speciesData;
+            AppState.data.species = species;
+
+            if (newDetections.length > 0) {
+                console.log(`✅ Found ${newDetections.length} new detections since last refresh`);
+
+                // Prepend new detections to existing array (newest first)
+                AppState.data.detections = [...newDetections, ...AppState.data.detections];
+
+                // Optional: Trim to keep only last 2000 detections in memory
+                if (AppState.data.detections.length > 2000) {
+                    AppState.data.detections = AppState.data.detections.slice(0, 2000);
+                    console.log(`🗑️ Trimmed to 2000 most recent detections`);
+                }
+
+                detections = AppState.data.detections;
+            } else {
+                console.log('ℹ️ No new detections since last refresh');
+                detections = AppState.data.detections;
+            }
         }
 
-        // Store raw data
-        AppState.data.species = species;
+        // Update the last detection time from the most recent detection
+        if (detections.length > 0) {
+            const latestDetection = detections[0];
+            const latestTime = parseDetectionDate(latestDetection);
+            AppState.data.lastDetectionTime = latestTime;
+        }
+
+        // Load species images from API thumbnail_url (only when species list changes)
+        const previousSpeciesCount = AppState.data.species.length;
         AppState.data.detections = detections;
 
-        // Load species images from API thumbnail_url
-        loadSpeciesImages(species);
+        // Debug: Log species count changes
+        if (previousSpeciesCount > 0 && AppState.data.species.length !== previousSpeciesCount) {
+            console.warn(`⚠️ Species count changed from ${previousSpeciesCount} to ${AppState.data.species.length}`);
+        }
+
+        // Load images only when species list changes or on first load
+        if (previousSpeciesCount === 0 || AppState.data.species.length !== previousSpeciesCount) {
+            loadSpeciesImages(AppState.data.species);
+        }
 
         // Analyze data
         AppState.data.analytics = Analytics.analyzeData(species, detections, AppState.filters);

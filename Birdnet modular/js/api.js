@@ -32,9 +32,10 @@ export async function fetchSpecies() {
 
 /**
  * Fetch recent detections from API with pagination support
- * Fetches multiple pages to get up to 500 detections for accurate daily counts
+ * @param {Date} sinceTime - Optional: Only fetch detections newer than this time (for incremental loading)
+ * Fetches multiple pages to get up to 2000 detections for accurate daily counts
  */
-export async function fetchDetections() {
+export async function fetchDetections(sinceTime = null) {
     try {
         const endpoints = [
             { base: '/detections', limit: 100 },
@@ -45,10 +46,14 @@ export async function fetchDetections() {
             try {
                 const allDetections = [];
                 let offset = 0;
-                const maxDetections = 2000; // Maximum total detections to fetch (prevents runaway API calls)
+                const maxDetections = sinceTime ? 200 : 2000; // Incremental: only fetch 2 pages, Initial: fetch all
                 let hasMorePages = true;
 
-                console.log(`📡 Fetching paginated detections from: ${endpoint.base}`);
+                if (sinceTime) {
+                    console.log(`📡 Fetching NEW detections from: ${endpoint.base} (since ${sinceTime.toLocaleString()})`);
+                } else {
+                    console.log(`📡 Fetching paginated detections from: ${endpoint.base}`);
+                }
 
                 while (hasMorePages && allDetections.length < maxDetections) {
                     const url = `${API_CONFIG.baseUrl}${endpoint.base}?limit=${endpoint.limit}&offset=${offset}`;
@@ -96,8 +101,19 @@ export async function fetchDetections() {
                 }
 
                 if (allDetections.length > 0) {
-                    console.log(`✅ Fetched ${allDetections.length} total detections from ${endpoint.base}`);
-                    return allDetections;
+                    // Filter by sinceTime if doing incremental loading
+                    if (sinceTime) {
+                        const newDetections = allDetections.filter(d => {
+                            const detectionTime = parseDetectionDate(d);
+                            return detectionTime > sinceTime;
+                        });
+
+                        console.log(`✅ Fetched ${allDetections.length} detections, ${newDetections.length} are new (since ${sinceTime.toLocaleString()})`);
+                        return newDetections;
+                    } else {
+                        console.log(`✅ Fetched ${allDetections.length} total detections from ${endpoint.base}`);
+                        return allDetections;
+                    }
                 }
             } catch (e) {
                 console.warn(`Failed to fetch from ${endpoint.base}:`, e);
