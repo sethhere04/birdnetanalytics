@@ -45,7 +45,7 @@ export async function fetchDetections() {
             try {
                 const allDetections = [];
                 let offset = 0;
-                const maxDetections = 500; // Maximum total detections to fetch
+                const maxDetections = 2000; // Maximum total detections to fetch (prevents runaway API calls)
                 let hasMorePages = true;
 
                 console.log(`📡 Fetching paginated detections from: ${endpoint.base}`);
