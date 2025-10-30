@@ -31,35 +31,76 @@ export async function fetchSpecies() {
 }
 
 /**
- * Fetch recent detections from API
- * Increased limit to 500 to capture full day of activity for "Active Today" count
+ * Fetch recent detections from API with pagination support
+ * Fetches multiple pages to get up to 500 detections for accurate daily counts
  */
 export async function fetchDetections() {
     try {
         const endpoints = [
-            '/detections?limit=500',
-            '/notes?limit=500&offset=0'
+            { base: '/detections', limit: 100 },
+            { base: '/notes', limit: 100 }
         ];
 
         for (const endpoint of endpoints) {
             try {
-                const url = `${API_CONFIG.baseUrl}${endpoint}`;
-                console.log(`📡 Fetching detections from: ${url}`);
+                const allDetections = [];
+                let offset = 0;
+                const maxDetections = 500; // Maximum total detections to fetch
+                let hasMorePages = true;
 
-                const response = await fetch(url);
-                if (response.ok) {
+                console.log(`📡 Fetching paginated detections from: ${endpoint.base}`);
+
+                while (hasMorePages && allDetections.length < maxDetections) {
+                    const url = `${API_CONFIG.baseUrl}${endpoint.base}?limit=${endpoint.limit}&offset=${offset}`;
+                    const response = await fetch(url);
+
+                    if (!response.ok) break;
+
                     const data = await response.json();
-                    const detections = Array.isArray(data) ? data : (data.data || []);
-                    console.log(`✅ API returned ${detections.length} detections from ${endpoint}`);
 
-                    // If we got less than requested, log a note
-                    if (detections.length === 100) {
-                        console.warn(`⚠️ Only got 100 detections - API may have a max limit, or this is all available data`);
+                    // Handle different response formats
+                    let pageDetections;
+                    let totalAvailable;
+                    let totalPages;
+
+                    if (Array.isArray(data)) {
+                        // Simple array format
+                        pageDetections = data;
+                        hasMorePages = data.length === endpoint.limit;
+                    } else if (data.data) {
+                        // Paginated format with metadata
+                        pageDetections = data.data;
+                        totalAvailable = data.total || 0;
+                        totalPages = data.total_pages || 1;
+
+                        console.log(`📄 Page ${data.current_page || 1}/${totalPages}: ${pageDetections.length} detections (${totalAvailable} total available)`);
+
+                        hasMorePages = (data.current_page || 1) < totalPages;
+                    } else {
+                        // Unknown format
+                        break;
                     }
 
-                    return detections;
+                    if (pageDetections.length === 0) {
+                        hasMorePages = false;
+                        break;
+                    }
+
+                    allDetections.push(...pageDetections);
+                    offset += endpoint.limit;
+
+                    // Stop if we've reached the max or got all available
+                    if (totalAvailable && allDetections.length >= totalAvailable) {
+                        hasMorePages = false;
+                    }
+                }
+
+                if (allDetections.length > 0) {
+                    console.log(`✅ Fetched ${allDetections.length} total detections from ${endpoint.base}`);
+                    return allDetections;
                 }
             } catch (e) {
+                console.warn(`Failed to fetch from ${endpoint.base}:`, e);
                 continue;
             }
         }
