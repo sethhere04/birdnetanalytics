@@ -5,6 +5,8 @@
 export const API_CONFIG = {
     baseUrl: 'http://192.168.68.129:8080/api/v2',
     refreshInterval: 60000, // 1 minute
+    initialLoadLimit: 5000,  // Maximum detections to fetch on initial load (5000 = ~50 pages = ~30 seconds)
+    // Options: 500 (fast), 2000 (balanced), 5000 (comprehensive), 100000 (everything - slow!)
 };
 
 /**
@@ -46,13 +48,13 @@ export async function fetchDetections(sinceTime = null) {
             try {
                 const allDetections = [];
                 let offset = 0;
-                const maxDetections = sinceTime ? 200 : 100000; // Incremental: 2 pages, Initial: up to 100k detections
+                const maxDetections = sinceTime ? 200 : API_CONFIG.initialLoadLimit; // Incremental: 2 pages, Initial: use config
                 let hasMorePages = true;
 
                 if (sinceTime) {
                     console.log(`📡 Fetching NEW detections from: ${endpoint.base} (since ${sinceTime.toLocaleString()})`);
                 } else {
-                    console.log(`📡 Fetching paginated detections from: ${endpoint.base}`);
+                    console.log(`📡 Fetching paginated detections from: ${endpoint.base} (limit: ${API_CONFIG.initialLoadLimit})`);
                 }
 
                 while (hasMorePages && allDetections.length < maxDetections) {

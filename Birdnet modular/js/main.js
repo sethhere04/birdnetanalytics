@@ -138,12 +138,16 @@ async function loadData() {
         let species;
 
         if (AppState.isInitialLoad) {
-            // Initial load: Fetch ALL available detections (paginated)
-            console.log('🔄 Initial load - fetching all available detections...');
-            console.log('⏳ This may take several minutes for large datasets (e.g., 80K detections = ~800 pages)');
+            // Initial load: Fetch detections up to configured limit
+            console.log('🔄 Initial load - fetching detections...');
+            const estimatedPages = Math.ceil(API_CONFIG.initialLoadLimit / 100);
+            const estimatedSeconds = Math.ceil(estimatedPages / 2); // Roughly 2 pages per second
+            console.log(`⏳ Loading up to ${API_CONFIG.initialLoadLimit.toLocaleString()} detections (~${estimatedPages} pages, ~${estimatedSeconds}s)`);
+            console.log(`💡 Tip: Adjust initialLoadLimit in js/api.js to change load speed vs data completeness`);
+
             const [speciesData, allDetections] = await Promise.all([
                 fetchSpecies(),
-                fetchDetections()  // Fetches all pages
+                fetchDetections()  // Fetches up to initialLoadLimit
             ]);
 
             species = speciesData;
