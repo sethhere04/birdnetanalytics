@@ -31,13 +31,14 @@ export async function fetchSpecies() {
 }
 
 /**
- * Fetch recent detections from API (limited to 100 for timeline)
+ * Fetch recent detections from API
+ * Increased limit to 500 to capture full day of activity for "Active Today" count
  */
 export async function fetchDetections() {
     try {
         const endpoints = [
-            '/detections?limit=100',
-            '/notes?limit=100&offset=0'
+            '/detections?limit=500',
+            '/notes?limit=500&offset=0'
         ];
 
         for (const endpoint of endpoints) {
