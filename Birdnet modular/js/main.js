@@ -61,6 +61,16 @@ function setupEventListeners() {
         refreshBtn.addEventListener('click', () => loadData());
     }
 
+    // Dark mode toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // Load saved theme preference
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+    }
+
     // Modal close (clicking outside)
     const modal = document.getElementById('species-modal');
     if (modal) {
@@ -225,6 +235,37 @@ export function applyFilters(filters) {
 
     // Update UI
     updateUI();
+}
+
+/**
+ * Toggle theme between light and dark
+ */
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+}
+
+/**
+ * Set theme and update UI
+ */
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+
+    // Update toggle button
+    const icon = document.getElementById('theme-icon');
+    const text = document.getElementById('theme-text');
+
+    if (theme === 'dark') {
+        if (icon) icon.textContent = '☀️';
+        if (text) text.textContent = 'Light Mode';
+    } else {
+        if (icon) icon.textContent = '🌙';
+        if (text) text.textContent = 'Dark Mode';
+    }
+
+    console.log(`🎨 Theme switched to ${theme} mode`);
 }
 
 // Auto-initialize when DOM is ready

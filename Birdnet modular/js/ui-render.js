@@ -220,6 +220,12 @@ export function renderDiversityMetrics(speciesData) {
 export function renderSpecies(analytics, detections, speciesData) {
     const allSpecies = analytics.allSpecies;
 
+    // NEW: Render photo gallery
+    renderPhotoGallery(speciesData, 'detections', 0);
+
+    // Setup gallery controls
+    setupGalleryControls(speciesData);
+
     // Render all species list with search/filter capability
     const container = document.getElementById('all-species-container');
     if (!container) return;
@@ -258,6 +264,109 @@ export function renderSpecies(analytics, detections, speciesData) {
 
     // NEW: Render calendar heatmap
     charts.renderCalendarHeatmap(detections);
+}
+
+/**
+ * NEW: Render species photo gallery
+ */
+export function renderPhotoGallery(speciesData, sortBy = 'detections', minConfidence = 0) {
+    const container = document.getElementById('photo-gallery');
+    if (!container) return;
+
+    // Filter species with images and above confidence threshold
+    let filteredSpecies = speciesData.filter(sp => {
+        const speciesName = sp.commonName || sp.common_name || sp.scientificName;
+        const imageUrl = getSpeciesImageUrl(speciesName);
+        const avgConfidence = (sp.avgConfidence || sp.avg_confidence || 0) * 100;
+        return imageUrl && avgConfidence >= minConfidence;
+    });
+
+    // Sort based on selection
+    switch (sortBy) {
+        case 'detections':
+            filteredSpecies.sort((a, b) => (b.detections || b.count || 0) - (a.detections || a.count || 0));
+            break;
+        case 'confidence':
+            filteredSpecies.sort((a, b) => {
+                const aConf = a.avgConfidence || a.avg_confidence || 0;
+                const bConf = b.avgConfidence || b.avg_confidence || 0;
+                return bConf - aConf;
+            });
+            break;
+        case 'recent':
+            filteredSpecies.sort((a, b) => {
+                const aDate = new Date(a.lastSeen || a.last_seen || 0);
+                const bDate = new Date(b.lastSeen || b.last_seen || 0);
+                return bDate - aDate;
+            });
+            break;
+        case 'alphabetical':
+            filteredSpecies.sort((a, b) => {
+                const aName = a.commonName || a.common_name || a.scientificName || '';
+                const bName = b.commonName || b.common_name || b.scientificName || '';
+                return aName.localeCompare(bName);
+            });
+            break;
+    }
+
+    if (filteredSpecies.length === 0) {
+        container.innerHTML = '<div class="gallery-empty"><div class="empty-icon" style="font-size: 4rem;">📸</div><p>No species with photos match your criteria</p></div>';
+        return;
+    }
+
+    container.innerHTML = filteredSpecies.map(sp => {
+        const speciesName = sp.commonName || sp.common_name || sp.scientificName;
+        const imageUrl = getSpeciesImageUrl(speciesName);
+        const count = sp.detections || sp.count || 0;
+        const confidence = ((sp.avgConfidence || sp.avg_confidence || 0) * 100).toFixed(1);
+        const lastSeen = new Date(sp.lastSeen || sp.last_seen).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        return `
+            <div class="gallery-item" onclick="window.showSpeciesDetail('${speciesName.replace(/'/g, "\\'")}')">
+                ${imageUrl ?
+                    `<img src="${imageUrl}" alt="${speciesName}" class="gallery-item-image" loading="lazy">` :
+                    `<div class="gallery-item-placeholder">🐦</div>`
+                }
+                <div class="gallery-item-badge">${confidence}%</div>
+                <div class="gallery-item-info">
+                    <div class="gallery-item-name">${speciesName}</div>
+                    <div class="gallery-item-stats">
+                        <span>${count} detections</span>
+                        <span>Last: ${lastSeen}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Setup gallery controls
+ */
+function setupGalleryControls(speciesData) {
+    const sortSelect = document.getElementById('gallery-sort');
+    const confidenceSlider = document.getElementById('confidence-filter');
+    const confidenceLabel = document.getElementById('confidence-label');
+
+    if (sortSelect && !sortSelect.dataset.initialized) {
+        sortSelect.addEventListener('change', (e) => {
+            const minConfidence = confidenceSlider ? parseInt(confidenceSlider.value) : 0;
+            renderPhotoGallery(speciesData, e.target.value, minConfidence);
+        });
+        sortSelect.dataset.initialized = 'true';
+    }
+
+    if (confidenceSlider && !confidenceSlider.dataset.initialized) {
+        confidenceSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (confidenceLabel) {
+                confidenceLabel.textContent = `Min Confidence: ${value}%`;
+            }
+            const sortBy = sortSelect ? sortSelect.value : 'detections';
+            renderPhotoGallery(speciesData, sortBy, parseInt(value));
+        });
+        confidenceSlider.dataset.initialized = 'true';
+    }
 }
 
 /**

@@ -13,9 +13,15 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-    <link rel="stylesheet" href="css/styles.css?v=2024102905">
+    <link rel="stylesheet" href="css/styles.css?v=2024102906">
 </head>
 <body>
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <span class="theme-toggle-icon" id="theme-icon">🌙</span>
+        <span class="theme-toggle-text" id="theme-text">Dark Mode</span>
+    </button>
+
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -192,6 +198,34 @@
         <!-- Species Tab -->
         <div id="species-tab" class="tab-content">
             <div class="grid">
+                <!-- Photo Gallery (NEW) -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📸 Species Photo Gallery</div>
+                                <div class="card-subtitle">All detected species with photos</div>
+                            </div>
+                            <div class="gallery-controls">
+                                <select id="gallery-sort" class="filter-select">
+                                    <option value="detections">Most Detections</option>
+                                    <option value="confidence">Highest Confidence</option>
+                                    <option value="recent">Most Recent</option>
+                                    <option value="alphabetical">Alphabetical</option>
+                                </select>
+                                <input type="range" id="confidence-filter" min="0" max="100" value="0" class="confidence-slider">
+                                <span id="confidence-label">Min Confidence: 0%</span>
+                            </div>
+                        </div>
+                        <div id="photo-gallery" class="photo-gallery">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading gallery...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Detection Calendar Heatmap (NEW) -->
                 <div class="col-12">
                     <div class="card">
@@ -412,6 +446,6 @@
     <div id="error-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 400px;"></div>
 
     <!-- Application Scripts - ES6 Modules -->
-    <script type="module" src="js/main.js?v=2024102905"></script>
+    <script type="module" src="js/main.js?v=2024102906"></script>
 </body>
 </html>

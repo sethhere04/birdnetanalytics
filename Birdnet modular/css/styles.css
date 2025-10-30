@@ -22,6 +22,21 @@
     --shadow: rgba(0, 0, 0, 0.05);
 }
 
+/* Dark Mode Variables */
+[data-theme="dark"] {
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --bg: #0f172a;
+    --bg-card: #1e293b;
+    --text: #f1f5f9;
+    --text-light: #94a3b8;
+    --border: #334155;
+    --shadow: rgba(0, 0, 0, 0.3);
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg);
@@ -1305,4 +1320,369 @@ body {
     border-radius: 6px;
     font-size: 0.875rem;
     font-weight: 500;
+}
+
+/* Dark Mode Toggle */
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+.theme-toggle-icon {
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+.theme-toggle-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text);
+    padding-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .theme-toggle {
+        top: 10px;
+        right: 10px;
+    }
+    
+    .theme-toggle-text {
+        display: none;
+    }
+}
+
+/* Enhanced Mobile Optimizations */
+@media (max-width: 1024px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .header-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .col-8 {
+        grid-column: span 12;
+    }
+
+    .col-6 {
+        grid-column: span 12;
+    }
+
+    .col-4 {
+        grid-column: span 12;
+    }
+}
+
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 1.5rem;
+    }
+
+    .header p {
+        font-size: 0.875rem;
+    }
+
+    .header-stats {
+        gap: 0.75rem;
+    }
+
+    .stat-card {
+        padding: 0.75rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+    }
+
+    .tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tab {
+        white-space: nowrap;
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .card-title {
+        font-size: 1rem;
+    }
+
+    .card-subtitle {
+        font-size: 0.75rem;
+    }
+
+    .chart-container,
+    .chart-container-large {
+        height: 250px;
+    }
+
+    .comparison-cards {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .diversity-metrics {
+        grid-template-columns: 1fr !important;
+    }
+
+    .food-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .recommendation-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .migration-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .today-species-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+    }
+}
+
+/* Touch-Friendly Improvements */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase touch targets */
+    .tab {
+        min-height: 44px;
+        padding: 0.875rem 1.25rem;
+    }
+
+    .btn-primary,
+    .filter-select,
+    .filter-input {
+        min-height: 44px;
+    }
+
+    .species-item,
+    .species-card,
+    .today-species-card,
+    .migration-card {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
+    }
+
+    .species-item:active,
+    .species-card:active,
+    .today-species-card:active {
+        transform: scale(0.98);
+        transition: transform 0.1s;
+    }
+
+    /* Disable hover effects on touch devices */
+    .tab:hover,
+    .species-item:hover,
+    .species-card:hover {
+        transform: none;
+    }
+}
+
+/* Small Mobile (phones in portrait) */
+@media (max-width: 480px) {
+    .header {
+        padding: 1.5rem 1rem;
+    }
+
+    .comparison-cards {
+        grid-template-columns: 1fr !important;
+    }
+
+    .species-detail-stats {
+        grid-template-columns: 1fr !important;
+    }
+
+    .food-tags,
+    .feeder-tags {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .food-tag,
+    .feeder-tag {
+        text-align: center;
+    }
+}
+
+/* Photo Gallery */
+.gallery-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.confidence-slider {
+    width: 150px;
+    height: 6px;
+    border-radius: 5px;
+    background: var(--border);
+    outline: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.confidence-slider:hover {
+    opacity: 1;
+}
+
+.confidence-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+}
+
+.confidence-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+}
+
+#confidence-label {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.gallery-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.gallery-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px var(--shadow);
+    border-color: var(--primary);
+}
+
+.gallery-item-image {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gallery-item-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gallery-item-info {
+    padding: 1rem;
+    background: var(--bg-card);
+}
+
+.gallery-item-name {
+    font-weight: 600;
+    font-size: 0.938rem;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+}
+
+.gallery-item-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.gallery-item-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--text);
+    padding: 0.25rem 0.625rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+}
+
+[data-theme="dark"] .gallery-item-badge {
+    background: rgba(30, 41, 59, 0.95);
+}
+
+.gallery-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-light);
+}
+
+@media (max-width: 768px) {
+    .photo-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .gallery-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .confidence-slider {
+        width: 100%;
+    }
 }
