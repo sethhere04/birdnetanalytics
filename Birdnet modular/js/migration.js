@@ -79,7 +79,8 @@ function predictMigrationSimple(pattern, firstSeen, lastSeen, today) {
         return {
             status: 'present',
             message: 'Expected year-round',
-            nextDate: null
+            nextDate: null,
+            countdown: null
         };
     }
 
@@ -87,21 +88,96 @@ function predictMigrationSimple(pattern, firstSeen, lastSeen, today) {
         return {
             status: 'present',
             message: `Recently seen on ${lastSeen.toLocaleDateString()}`,
-            nextDate: lastSeen
+            nextDate: lastSeen,
+            countdown: null
         };
     }
 
     if (daysSinceLast > 30) {
+        const nextExpected = calculateNextExpectedDate(pattern, firstSeen, lastSeen, today);
         return {
             status: 'departed',
             message: `Last seen ${lastSeen.toLocaleDateString()}. May return in migration season.`,
-            nextDate: new Date(today.getFullYear() + 1, firstSeen.getMonth(), firstSeen.getDate())
+            nextDate: nextExpected,
+            countdown: calculateCountdown(nextExpected, today)
         };
     }
 
     return {
         status: 'migrating',
         message: 'May appear during migration',
-        nextDate: today
+        nextDate: today,
+        countdown: null
     };
+}
+
+/**
+ * Calculate next expected arrival date based on pattern
+ */
+function calculateNextExpectedDate(pattern, firstSeen, lastSeen, today) {
+    const currentYear = today.getFullYear();
+    const firstMonth = firstSeen.getMonth();
+    const firstDay = firstSeen.getDate();
+
+    let nextExpected = new Date(currentYear, firstMonth, firstDay);
+
+    // If the expected date has passed this year, predict for next year
+    if (nextExpected < today) {
+        nextExpected = new Date(currentYear + 1, firstMonth, firstDay);
+    }
+
+    // Adjust based on pattern type
+    if (pattern.type === 'summer') {
+        // Summer birds typically arrive in spring (April-May)
+        nextExpected = new Date(nextExpected.getFullYear(), Math.max(3, firstMonth), firstDay);
+    } else if (pattern.type === 'winter') {
+        // Winter birds typically arrive in fall (October-November)
+        nextExpected = new Date(nextExpected.getFullYear(), Math.max(9, firstMonth), firstDay);
+    }
+
+    return nextExpected;
+}
+
+/**
+ * Calculate countdown to a future date
+ */
+function calculateCountdown(futureDate, today) {
+    if (!futureDate) return null;
+
+    const diff = futureDate - today;
+    if (diff < 0) return null;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const weeks = Math.floor(days / 7);
+    const months = Math.floor(days / 30);
+
+    if (days === 0) {
+        return { value: 0, unit: 'days', text: 'Today!' };
+    } else if (days === 1) {
+        return { value: 1, unit: 'day', text: '1 day' };
+    } else if (days < 7) {
+        return { value: days, unit: 'days', text: `${days} days` };
+    } else if (days < 30) {
+        const remainingDays = days % 7;
+        return {
+            value: weeks,
+            unit: 'weeks',
+            text: remainingDays > 0 ? `${weeks} weeks, ${remainingDays} days` : `${weeks} weeks`
+        };
+    } else if (days < 365) {
+        const remainingWeeks = Math.floor((days % 30) / 7);
+        return {
+            value: months,
+            unit: 'months',
+            text: remainingWeeks > 0 ? `${months} months, ${remainingWeeks} weeks` : `${months} months`
+        };
+    } else {
+        const years = Math.floor(days / 365);
+        const remainingMonths = Math.floor((days % 365) / 30);
+        return {
+            value: years,
+            unit: 'years',
+            text: remainingMonths > 0 ? `${years} years, ${remainingMonths} months` : `${years} years`
+        };
+    }
 }

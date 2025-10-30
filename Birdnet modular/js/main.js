@@ -84,6 +84,15 @@ function setupEventListeners() {
         });
     }
 
+    // Diversity period selector
+    const diversityPeriodSelect = document.getElementById('diversity-period-select');
+    if (diversityPeriodSelect) {
+        diversityPeriodSelect.addEventListener('change', (e) => {
+            const periodType = e.target.value;
+            UIRender.renderDiversityTrends(AppState.data.detections, periodType);
+        });
+    }
+
     // Export functions to window for onclick handlers
     window.showSpeciesDetail = (speciesName) => {
         UIRender.showSpeciesDetail(speciesName, AppState.data.analytics);
@@ -91,6 +100,9 @@ function setupEventListeners() {
     window.closeSpeciesModal = () => {
         UIRender.closeSpeciesModal();
     };
+
+    // Export analytics module to window so new rendering functions can access it
+    window.analyticsModule = Analytics;
 }
 
 /**
@@ -211,7 +223,7 @@ function renderCurrentTab() {
             UIRender.renderFeeding(species);
             break;
         case 'insights':
-            UIRender.renderInsights(analytics);
+            UIRender.renderInsights(analytics, species, detections);
             break;
     }
 }

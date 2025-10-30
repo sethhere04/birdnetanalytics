@@ -271,6 +271,21 @@
                     </div>
                 </div>
 
+                <!-- Time-to-Next-Detection Predictions -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">⏱️ Next Detection Predictions</div>
+                        </div>
+                        <div id="next-detection-container" style="padding: 1rem;">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Calculating predictions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- All Species List -->
                 <div class="col-12">
                     <div class="card">
@@ -339,6 +354,21 @@
                     </div>
                 </div>
 
+                <!-- Peak Activity Predictions -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🔮 Peak Activity Predictions (Next 7 Days)</div>
+                        </div>
+                        <div id="peak-predictions-container" style="padding: 1rem;">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Analyzing patterns...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-6">
                     <div class="card">
                         <div class="card-header">
@@ -372,6 +402,34 @@
         <!-- Insights Tab -->
         <div id="insights-tab" class="tab-content">
             <div class="grid">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Diversity Trends Over Time</div>
+                            <select id="diversity-period-select" class="filter-select" style="width: auto;">
+                                <option value="daily">Last 30 Days</option>
+                                <option value="weekly">Last 12 Weeks</option>
+                                <option value="monthly">Last 12 Months</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="diversity-trends-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Species Co-occurrence Analysis</div>
+                        </div>
+                        <div id="cooccurrence-container" style="padding: 1rem;">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Analyzing species patterns...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">

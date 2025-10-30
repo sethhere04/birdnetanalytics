@@ -534,6 +534,40 @@ body {
     color: var(--text);
 }
 
+/* Migration Countdown */
+.migration-countdown {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-radius: 6px;
+    border-left: 3px solid var(--primary);
+}
+
+.countdown-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.countdown-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.countdown-text strong {
+    color: var(--primary);
+    font-size: 0.938rem;
+}
+
+.countdown-text small {
+    color: var(--text-light);
+    font-size: 0.75rem;
+}
+
 /* Today's Species Cards */
 .today-species-card {
     background: var(--bg);
@@ -1755,4 +1789,318 @@ body {
     border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+}
+/* Peak Activity Predictions */
+.prediction-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.prediction-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.prediction-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+.prediction-today {
+    border-left: 4px solid var(--primary);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.prediction-header {
+    margin-bottom: 1rem;
+}
+
+.prediction-day {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.prediction-day strong {
+    font-size: 1.125rem;
+    color: var(--text);
+}
+
+.prediction-date {
+    font-size: 0.875rem;
+    color: var(--text-light);
+}
+
+.badge-today {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.prediction-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.prediction-peak {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg);
+    border-radius: 6px;
+}
+
+.prediction-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.prediction-time {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.prediction-time strong {
+    color: var(--text);
+    font-size: 0.938rem;
+}
+
+.prediction-time span {
+    color: var(--text-light);
+    font-size: 0.813rem;
+}
+
+.prediction-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.prediction-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.stat-value {
+    font-size: 0.938rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Species Co-occurrence Analysis */
+.cooccurrence-intro {
+    padding: 0.5rem 0 1rem 0;
+    color: var(--text-light);
+}
+
+.cooccurrence-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.cooccurrence-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+.cooccurrence-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.cooccurrence-rank {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+    min-width: 40px;
+    text-align: center;
+}
+
+.cooccurrence-species {
+    flex: 1;
+}
+
+.species-pair {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.species-pair .species-name {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.pair-connector {
+    color: var(--text-light);
+    font-weight: 400;
+}
+
+.cooccurrence-metrics {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.cooccurrence-count {
+    font-size: 0.938rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.cooccurrence-strength {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Next Detection Predictions */
+.next-detection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.next-detection-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.next-detection-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+.detection-overdue {
+    border-left: 4px solid #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.detection-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.detection-species {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detection-species strong {
+    font-size: 1rem;
+    color: var(--text);
+}
+
+.detection-count {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.detection-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.detection-prediction {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg);
+    border-radius: 6px;
+}
+
+.prediction-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.prediction-info strong {
+    color: var(--text);
+    font-size: 0.938rem;
+}
+
+.prediction-info small {
+    color: var(--text-light);
+    font-size: 0.75rem;
+}
+
+.detection-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.detection-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detection-last-seen {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .prediction-grid,
+    .next-detection-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cooccurrence-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .cooccurrence-metrics {
+        align-items: flex-start;
+    }
+
+    .prediction-stats,
+    .detection-stats {
+        grid-template-columns: 1fr;
+    }
 }

@@ -575,3 +575,131 @@ export function renderYearOverYearChart(species, canvasId = 'year-over-year-char
         }
     });
 }
+
+/**
+ * Render diversity trends over time chart
+ */
+export function renderDiversityTrendsChart(trendsData) {
+    const canvas = document.getElementById('diversity-trends-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    // Destroy existing chart if it exists
+    if (window.diversityTrendsChart instanceof Chart) {
+        window.diversityTrendsChart.destroy();
+    }
+
+    if (trendsData.length === 0) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '14px Inter, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data available', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+
+    const labels = trendsData.map(d => d.label);
+    const shannonData = trendsData.map(d => d.shannon);
+    const simpsonData = trendsData.map(d => d.simpson);
+    const richnessData = trendsData.map(d => d.richness);
+
+    window.diversityTrendsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Shannon Index',
+                    data: shannonData,
+                    borderColor: 'rgb(102, 126, 234)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Simpson Index',
+                    data: simpsonData,
+                    borderColor: 'rgb(118, 75, 162)',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Species Richness',
+                    data: richnessData,
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Diversity Trends Over Time',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return 'Higher = more diverse';
+                            } else if (context.datasetIndex === 1) {
+                                return 'Range: 0-1 (1 = max diversity)';
+                            } else if (context.datasetIndex === 2) {
+                                return 'Total unique species';
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Diversity Indices'
+                    },
+                    beginAtZero: true
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Species Richness'
+                    },
+                    beginAtZero: true,
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+}

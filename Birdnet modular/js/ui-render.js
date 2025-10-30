@@ -264,6 +264,9 @@ export function renderSpecies(analytics, detections, speciesData) {
 
     // NEW: Render calendar heatmap
     charts.renderCalendarHeatmap(detections);
+
+    // NEW: Render next detection predictions
+    renderNextDetectionPredictions(speciesData, detections);
 }
 
 /**
@@ -378,6 +381,9 @@ export function renderActivity(analytics, detections) {
 
     // NEW: Hour × Day heatmap
     charts.renderHourDayHeatmap(detections);
+
+    // NEW: Peak activity predictions
+    renderPeakPredictions(detections);
 
     // Timeline
     renderTimeline(analytics.recent);
@@ -520,6 +526,15 @@ export function renderMigration(speciesData) {
                             <span class="migration-label">Detections</span>
                             <span class="migration-value">${m.detectionCount}</span>
                         </div>
+                        ${m.prediction.countdown ? `
+                        <div class="migration-countdown">
+                            <div class="countdown-icon">⏰</div>
+                            <div class="countdown-text">
+                                <strong>Expected in ${m.prediction.countdown.text}</strong>
+                                <small>Next arrival: ${m.prediction.nextDate?.toLocaleDateString()}</small>
+                            </div>
+                        </div>
+                        ` : ''}
                         <div class="migration-prediction">
                             <strong>Prediction:</strong> ${m.prediction.message}
                         </div>
@@ -543,7 +558,14 @@ export function renderMigration(speciesData) {
 /**
  * Render insights tab
  */
-export function renderInsights(analytics) {
+export function renderInsights(analytics, speciesData, detections) {
+    // Render diversity trends chart (default to daily view)
+    renderDiversityTrends(detections, 'daily');
+
+    // Render co-occurrence analysis
+    renderCoOccurrence(detections);
+
+    // Render AI-powered insights
     const container = document.getElementById('insights-list');
     if (!container) return;
 
@@ -873,4 +895,176 @@ export function showLoading() {
 export function hideLoading() {
     const loader = document.getElementById('loading');
     if (loader) loader.style.display = 'none';
+}
+
+/**
+ * Render diversity trends chart
+ */
+export function renderDiversityTrends(detections, periodType = 'daily') {
+    const periods = periodType === 'daily' ? 30 : periodType === 'weekly' ? 12 : 12;
+    const trendsData = window.analyticsModule.calculateDiversityTrends(detections, periodType, periods);
+    charts.renderDiversityTrendsChart(trendsData);
+}
+
+/**
+ * Render peak activity predictions
+ */
+export function renderPeakPredictions(detections) {
+    const predictions = window.analyticsModule.predictPeakActivity(detections, 7);
+    const container = document.getElementById('peak-predictions-container');
+
+    if (!container) return;
+
+    if (predictions.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Not enough data to predict peak activity</p></div>';
+        return;
+    }
+
+    let html = '<div class="prediction-grid">';
+
+    predictions.forEach(pred => {
+        const confidenceColor = pred.confidence === 'high' ? '#10b981' : pred.confidence === 'medium' ? '#f59e0b' : '#6b7280';
+        const todayClass = pred.isToday ? ' prediction-today' : '';
+
+        html += `
+            <div class="prediction-card${todayClass}">
+                <div class="prediction-header">
+                    <div class="prediction-day">
+                        <strong>${pred.dayName}</strong>
+                        <span class="prediction-date">${pred.dateStr}</span>
+                        ${pred.isToday ? '<span class="badge-today">Today</span>' : ''}
+                    </div>
+                </div>
+                <div class="prediction-body">
+                    <div class="prediction-peak">
+                        <div class="prediction-icon">⏰</div>
+                        <div class="prediction-time">
+                            <strong>Peak: ${pred.timeRange}</strong>
+                            <span>Expected ${pred.peakActivity} detections</span>
+                        </div>
+                    </div>
+                    <div class="prediction-stats">
+                        <div class="prediction-stat">
+                            <span class="stat-label">Avg Activity</span>
+                            <span class="stat-value">${pred.expectedActivity}/hour</span>
+                        </div>
+                        <div class="prediction-stat">
+                            <span class="stat-label">Confidence</span>
+                            <span class="stat-value" style="color: ${confidenceColor}">${pred.confidence}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+/**
+ * Render species co-occurrence analysis
+ */
+export function renderCoOccurrence(detections) {
+    const coOccurrences = window.analyticsModule.calculateCoOccurrence(detections, 3);
+    const container = document.getElementById('cooccurrence-container');
+
+    if (!container) return;
+
+    if (coOccurrences.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Not enough data to analyze species co-occurrence</p></div>';
+        return;
+    }
+
+    let html = '<div class="cooccurrence-intro"><p>These species are frequently detected together within the same hour:</p></div>';
+    html += '<div class="cooccurrence-list">';
+
+    // Show top 15 pairs
+    coOccurrences.slice(0, 15).forEach((pair, index) => {
+        const strength = pair.count > 10 ? 'strong' : pair.count > 5 ? 'moderate' : 'weak';
+        const strengthColor = strength === 'strong' ? '#10b981' : strength === 'moderate' ? '#3b82f6' : '#6b7280';
+
+        html += `
+            <div class="cooccurrence-item">
+                <div class="cooccurrence-rank">#${index + 1}</div>
+                <div class="cooccurrence-species">
+                    <div class="species-pair">
+                        <span class="species-name">${pair.species1}</span>
+                        <span class="pair-connector">&</span>
+                        <span class="species-name">${pair.species2}</span>
+                    </div>
+                </div>
+                <div class="cooccurrence-metrics">
+                    <span class="cooccurrence-count">${pair.count} times</span>
+                    <span class="cooccurrence-strength" style="color: ${strengthColor}">${strength}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+/**
+ * Render next detection predictions
+ */
+export function renderNextDetectionPredictions(speciesData, detections) {
+    const predictions = window.analyticsModule.predictNextDetection(speciesData, detections);
+    const container = document.getElementById('next-detection-container');
+
+    if (!container) return;
+
+    if (predictions.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Not enough data to predict next detections</p></div>';
+        return;
+    }
+
+    let html = '<div class="next-detection-grid">';
+
+    // Show top 20 predictions
+    predictions.slice(0, 20).forEach(pred => {
+        const confidenceColor = pred.confidence === 'high' ? '#10b981' : pred.confidence === 'medium' ? '#f59e0b' : '#6b7280';
+        const isOverdue = pred.hoursUntilNext < 0;
+        const imageUrl = getSpeciesImageUrl(pred.species);
+
+        html += `
+            <div class="next-detection-card${isOverdue ? ' detection-overdue' : ''}">
+                <div class="detection-header">
+                    <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                        ${!imageUrl ? '🐦' : ''}
+                    </div>
+                    <div class="detection-species">
+                        <strong>${pred.species}</strong>
+                        <span class="detection-count">${pred.detectionCount} detections</span>
+                    </div>
+                </div>
+                <div class="detection-body">
+                    <div class="detection-prediction">
+                        <div class="prediction-icon">${isOverdue ? '⚠️' : '🕐'}</div>
+                        <div class="prediction-info">
+                            <strong>${pred.message}</strong>
+                            <small>${pred.nextExpected.toLocaleString()}</small>
+                        </div>
+                    </div>
+                    <div class="detection-stats">
+                        <div class="detection-stat">
+                            <span class="stat-label">Avg Interval</span>
+                            <span class="stat-value">${pred.avgInterval < 24 ? Math.round(pred.avgInterval) + 'h' : Math.round(pred.avgInterval / 24) + 'd'}</span>
+                        </div>
+                        <div class="detection-stat">
+                            <span class="stat-label">Confidence</span>
+                            <span class="stat-value" style="color: ${confidenceColor}">${pred.confidence}</span>
+                        </div>
+                    </div>
+                    <div class="detection-last-seen">
+                        Last seen: ${pred.lastSeen.toLocaleString()}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
 }

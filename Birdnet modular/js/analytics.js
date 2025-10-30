@@ -488,6 +488,285 @@ export function calculateComparisonStats(detections, species) {
 }
 
 /**
+ * Calculate diversity trends over time
+ * Returns diversity metrics (Shannon, Simpson, Richness) for each time period
+ */
+export function calculateDiversityTrends(detections, periodType = 'daily', periods = 30) {
+    if (!detections || detections.length === 0) return [];
+
+    const now = new Date();
+    const trends = [];
+
+    for (let i = periods - 1; i >= 0; i--) {
+        let periodStart, periodEnd, label;
+
+        if (periodType === 'daily') {
+            periodStart = new Date(now);
+            periodStart.setDate(now.getDate() - i);
+            periodStart.setHours(0, 0, 0, 0);
+            periodEnd = new Date(periodStart);
+            periodEnd.setDate(periodStart.getDate() + 1);
+            label = periodStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } else if (periodType === 'weekly') {
+            periodStart = new Date(now);
+            periodStart.setDate(now.getDate() - (i * 7));
+            periodStart.setHours(0, 0, 0, 0);
+            periodEnd = new Date(periodStart);
+            periodEnd.setDate(periodStart.getDate() + 7);
+            label = `Week of ${periodStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        } else if (periodType === 'monthly') {
+            periodStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            periodEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+            label = periodStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        }
+
+        // Filter detections for this period
+        const periodDetections = detections.filter(d => {
+            const date = parseDetectionDate(d);
+            return date >= periodStart && date < periodEnd;
+        });
+
+        // Count species occurrences in this period
+        const speciesCounts = {};
+        periodDetections.forEach(d => {
+            const speciesName = d.commonName || d.common_name || d.scientificName || 'Unknown';
+            speciesCounts[speciesName] = (speciesCounts[speciesName] || 0) + 1;
+        });
+
+        // Convert to array format for diversity calculations
+        const speciesArray = Object.entries(speciesCounts).map(([name, count]) => ({
+            name,
+            count,
+            detections: count
+        }));
+
+        // Calculate diversity metrics
+        const shannon = calculateShannonIndex(speciesArray);
+        const simpson = calculateSimpsonIndex(speciesArray);
+        const richness = speciesArray.length;
+
+        trends.push({
+            date: periodStart,
+            label,
+            shannon: parseFloat(shannon.toFixed(2)),
+            simpson: parseFloat(simpson.toFixed(2)),
+            richness,
+            detections: periodDetections.length
+        });
+    }
+
+    return trends;
+}
+
+/**
+ * Predict peak activity times for the next 7 days
+ * Based on historical hourly and daily patterns
+ */
+export function predictPeakActivity(detections, days = 7) {
+    if (!detections || detections.length === 0) return [];
+
+    const now = new Date();
+    const predictions = [];
+
+    // Analyze historical patterns by day of week and hour
+    const dayHourPatterns = {};
+
+    detections.forEach(d => {
+        const date = parseDetectionDate(d);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+        const hour = date.getHours();
+
+        const key = `${dayOfWeek}-${hour}`;
+        dayHourPatterns[key] = (dayHourPatterns[key] || 0) + 1;
+    });
+
+    // Predict for next 7 days
+    for (let i = 0; i < days; i++) {
+        const futureDate = new Date(now);
+        futureDate.setDate(now.getDate() + i);
+        futureDate.setHours(0, 0, 0, 0);
+
+        const dayOfWeek = futureDate.getDay();
+
+        // Find peak hour for this day of week
+        let peakHour = 0;
+        let peakCount = 0;
+        let totalActivity = 0;
+
+        for (let hour = 0; hour < 24; hour++) {
+            const key = `${dayOfWeek}-${hour}`;
+            const count = dayHourPatterns[key] || 0;
+            totalActivity += count;
+
+            if (count > peakCount) {
+                peakCount = count;
+                peakHour = hour;
+            }
+        }
+
+        // Calculate confidence based on data available
+        const avgActivity = totalActivity / 24;
+        const confidence = totalActivity > 20 ? 'high' : totalActivity > 10 ? 'medium' : 'low';
+
+        // Format peak time range
+        const peakStart = peakHour;
+        const peakEnd = (peakHour + 1) % 24;
+        const timeRange = `${peakStart.toString().padStart(2, '0')}:00 - ${peakEnd.toString().padStart(2, '0')}:00`;
+
+        predictions.push({
+            date: futureDate,
+            dayName: futureDate.toLocaleDateString('en-US', { weekday: 'long' }),
+            dateStr: futureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            peakHour,
+            timeRange,
+            expectedActivity: Math.round(avgActivity),
+            peakActivity: peakCount,
+            confidence,
+            isToday: i === 0
+        });
+    }
+
+    return predictions;
+}
+
+/**
+ * Calculate species co-occurrence patterns
+ * Returns pairs of species frequently detected together
+ */
+export function calculateCoOccurrence(detections, minSupport = 3) {
+    if (!detections || detections.length === 0) return [];
+
+    // Group detections by time windows (1-hour windows)
+    const timeWindows = {};
+
+    detections.forEach(d => {
+        const date = parseDetectionDate(d);
+        const windowKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+
+        if (!timeWindows[windowKey]) {
+            timeWindows[windowKey] = new Set();
+        }
+
+        const speciesName = d.commonName || d.common_name || d.scientificName || 'Unknown';
+        timeWindows[windowKey].add(speciesName);
+    });
+
+    // Count co-occurrences
+    const coOccurrences = {};
+
+    Object.values(timeWindows).forEach(speciesSet => {
+        const speciesArray = Array.from(speciesSet);
+
+        // Generate all pairs
+        for (let i = 0; i < speciesArray.length; i++) {
+            for (let j = i + 1; j < speciesArray.length; j++) {
+                const pair = [speciesArray[i], speciesArray[j]].sort().join(' & ');
+                coOccurrences[pair] = (coOccurrences[pair] || 0) + 1;
+            }
+        }
+    });
+
+    // Convert to array and filter by minimum support
+    const coOccurrenceArray = Object.entries(coOccurrences)
+        .map(([pair, count]) => {
+            const [species1, species2] = pair.split(' & ');
+            return { species1, species2, count };
+        })
+        .filter(item => item.count >= minSupport)
+        .sort((a, b) => b.count - a.count);
+
+    return coOccurrenceArray;
+}
+
+/**
+ * Predict time to next detection for each species
+ * Based on historical detection intervals
+ */
+export function predictNextDetection(species, detections) {
+    if (!species || species.length === 0) return [];
+
+    const now = new Date();
+    const predictions = [];
+
+    species.forEach(s => {
+        const speciesName = s.commonName || s.common_name || s.scientificName || 'Unknown';
+
+        // Get all detections for this species
+        const speciesDetections = detections
+            .filter(d => (d.commonName || d.common_name || d.scientificName) === speciesName)
+            .map(d => parseDetectionDate(d))
+            .sort((a, b) => a - b);
+
+        if (speciesDetections.length < 2) {
+            // Not enough data
+            predictions.push({
+                species: speciesName,
+                lastSeen: s.lastSeen ? new Date(s.lastSeen) : null,
+                avgInterval: null,
+                nextExpected: null,
+                confidence: 'insufficient data',
+                message: 'Need more detection history'
+            });
+            return;
+        }
+
+        // Calculate intervals between detections
+        const intervals = [];
+        for (let i = 1; i < speciesDetections.length; i++) {
+            const interval = (speciesDetections[i] - speciesDetections[i - 1]) / (1000 * 60 * 60); // hours
+            intervals.push(interval);
+        }
+
+        // Calculate average interval
+        const avgInterval = intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
+        const stdDev = Math.sqrt(
+            intervals.reduce((sum, val) => sum + Math.pow(val - avgInterval, 2), 0) / intervals.length
+        );
+
+        // Predict next detection
+        const lastDetection = speciesDetections[speciesDetections.length - 1];
+        const nextExpected = new Date(lastDetection.getTime() + (avgInterval * 60 * 60 * 1000));
+
+        const timeSinceLastMs = now - lastDetection;
+        const hoursUntilNext = (nextExpected - now) / (1000 * 60 * 60);
+
+        // Determine confidence based on consistency
+        const cv = stdDev / avgInterval; // Coefficient of variation
+        let confidence = 'low';
+        if (cv < 0.5 && speciesDetections.length >= 10) confidence = 'high';
+        else if (cv < 1.0 && speciesDetections.length >= 5) confidence = 'medium';
+
+        // Generate message
+        let message;
+        if (hoursUntilNext < 0) {
+            message = 'Overdue (check soon!)';
+        } else if (hoursUntilNext < 1) {
+            message = 'Expected within the hour';
+        } else if (hoursUntilNext < 24) {
+            message = `Expected in ${Math.round(hoursUntilNext)} hours`;
+        } else {
+            message = `Expected in ${Math.round(hoursUntilNext / 24)} days`;
+        }
+
+        predictions.push({
+            species: speciesName,
+            lastSeen: lastDetection,
+            avgInterval: avgInterval,
+            nextExpected,
+            hoursUntilNext: Math.round(hoursUntilNext),
+            confidence,
+            message,
+            detectionCount: speciesDetections.length
+        });
+    });
+
+    // Sort by next expected time
+    return predictions
+        .filter(p => p.nextExpected !== null)
+        .sort((a, b) => a.nextExpected - b.nextExpected);
+}
+
+/**
  * Get empty analytics structure
  */
 function getEmptyAnalytics() {
