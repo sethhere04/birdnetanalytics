@@ -1686,3 +1686,73 @@ body {
         width: 100%;
     }
 }
+
+/* Enhanced Species Modal */
+.species-info-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+
+.species-description {
+    margin-bottom: 1.5rem;
+}
+
+.species-description h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.species-description p {
+    font-size: 0.938rem;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 1rem;
+}
+
+.wiki-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.wiki-link:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+.conservation-status {
+    background: var(--bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--success);
+    margin-top: 1rem;
+}
+
+.conservation-status strong {
+    color: var(--text);
+}
+
+.loading-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--text-light);
+}
+
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}

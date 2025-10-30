@@ -31,6 +31,9 @@ const AppState = {
 export async function init() {
     console.log('🔧 Initializing BirdAnalytics...');
 
+    // Request notification permission
+    requestNotificationPermission();
+
     // Set up event listeners
     setupEventListeners();
 
@@ -134,6 +137,9 @@ async function loadData() {
 
         // Analyze data
         AppState.data.analytics = analyzeData(species, detections, AppState.filters);
+
+        // Check for rare species and send notifications
+        checkForRareSpecies(AppState.data.analytics);
 
         // Update UI
         updateUI();
@@ -266,6 +272,68 @@ function setTheme(theme) {
     }
 
     console.log(`🎨 Theme switched to ${theme} mode`);
+}
+
+/**
+ * Request notification permission from user
+ */
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+            console.log(`📢 Notification permission: ${permission}`);
+        });
+    }
+}
+
+/**
+ * Check for rare species and send notifications
+ */
+function checkForRareSpecies(analytics) {
+    if (!analytics || !analytics.rarest || analytics.rarest.length === 0) return;
+
+    // Only notify if permission is granted
+    if ('Notification' in window && Notification.permission === 'granted') {
+        // Get previously notified species from localStorage
+        const notifiedKey = 'notified_rare_species';
+        const notified = JSON.parse(localStorage.getItem(notifiedKey) || '{}');
+        const today = new Date().toDateString();
+
+        // Check each rare species (1-3 detections)
+        analytics.rarest.forEach(species => {
+            const speciesKey = `${species.name}_${today}`;
+
+            // Only notify once per day per species
+            if (!notified[speciesKey]) {
+                // Send notification
+                const notification = new Notification('🦅 Rare Bird Detected!', {
+                    body: `${species.name} spotted! This is a rare visitor with only ${species.count} detection${species.count > 1 ? 's' : ''}.`,
+                    icon: species.image || '/bird-icon.png',
+                    tag: species.name,
+                    requireInteraction: false
+                });
+
+                notification.onclick = () => {
+                    window.focus();
+                    notification.close();
+                };
+
+                // Mark as notified
+                notified[speciesKey] = Date.now();
+                localStorage.setItem(notifiedKey, JSON.stringify(notified));
+
+                console.log(`📢 Notification sent for rare species: ${species.name}`);
+            }
+        });
+
+        // Clean up old notifications (older than 7 days)
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        Object.keys(notified).forEach(key => {
+            if (notified[key] < sevenDaysAgo) {
+                delete notified[key];
+            }
+        });
+        localStorage.setItem(notifiedKey, JSON.stringify(notified));
+    }
 }
 
 // Auto-initialize when DOM is ready

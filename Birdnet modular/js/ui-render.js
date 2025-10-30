@@ -711,9 +711,9 @@ export function renderSpeciesFeedingGuide(speciesData) {
 }
 
 /**
- * Show species detail modal
+ * Show species detail modal with Wikipedia integration
  */
-export function showSpeciesDetail(speciesName, analytics) {
+export async function showSpeciesDetail(speciesName, analytics) {
     const species = analytics.allSpecies.find(s => s.name === speciesName);
     if (!species) return;
 
@@ -724,6 +724,7 @@ export function showSpeciesDetail(speciesName, analytics) {
     const firstSeen = species.firstSeen.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     const lastSeen = species.lastSeen.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
+    // Show modal with basic info first
     modalContent.innerHTML = `
         <button class="modal-close" onclick="window.closeSpeciesModal()">&times;</button>
         ${imageUrl ?
@@ -749,9 +750,81 @@ export function showSpeciesDetail(speciesName, analytics) {
                 <div class="stat-value">${lastSeen}</div>
             </div>
         </div>
+        <div class="species-info-section">
+            <div class="loading-inline">
+                <div class="spinner-small"></div>
+                <span>Loading additional information...</span>
+            </div>
+        </div>
     `;
 
     modal.classList.add('active');
+
+    // Fetch Wikipedia data
+    try {
+        const wikiData = await fetchWikipediaInfo(speciesName);
+        const infoSection = modalContent.querySelector('.species-info-section');
+
+        if (wikiData) {
+            infoSection.innerHTML = `
+                <div class="species-description">
+                    <h3>About This Species</h3>
+                    <p>${wikiData.extract}</p>
+                    ${wikiData.url ? `<a href="${wikiData.url}" target="_blank" class="wiki-link">Read more on Wikipedia →</a>` : ''}
+                </div>
+                ${wikiData.conservation ? `
+                    <div class="conservation-status">
+                        <strong>Conservation Status:</strong> ${wikiData.conservation}
+                    </div>
+                ` : ''}
+            `;
+        } else {
+            infoSection.innerHTML = `
+                <div class="species-description">
+                    <p style="color: var(--text-light); font-style: italic;">Additional information not available</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error fetching Wikipedia data:', error);
+        const infoSection = modalContent.querySelector('.species-info-section');
+        if (infoSection) {
+            infoSection.innerHTML = `
+                <div class="species-description">
+                    <p style="color: var(--text-light); font-style: italic;">Unable to load additional information</p>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
+ * Fetch Wikipedia information for a species
+ */
+async function fetchWikipediaInfo(speciesName) {
+    try {
+        // Clean up the species name for search
+        const searchName = speciesName.replace(/'/g, '').trim();
+
+        // Use Wikipedia REST API
+        const response = await fetch(
+            `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchName)}`,
+            { headers: { 'Accept': 'application/json' } }
+        );
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        return {
+            extract: data.extract || data.description || 'No description available.',
+            url: data.content_urls?.desktop?.page || null,
+            conservation: data.conservation_status || null
+        };
+    } catch (error) {
+        console.error('Wikipedia fetch error:', error);
+        return null;
+    }
 }
 
 /**
