@@ -43,11 +43,20 @@ export async function fetchDetections() {
 
         for (const endpoint of endpoints) {
             try {
-                const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`);
+                const url = `${API_CONFIG.baseUrl}${endpoint}`;
+                console.log(`📡 Fetching detections from: ${url}`);
+
+                const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     const detections = Array.isArray(data) ? data : (data.data || []);
-                    console.log(`✅ Found ${detections.length} recent detections from ${endpoint}`);
+                    console.log(`✅ API returned ${detections.length} detections from ${endpoint}`);
+
+                    // If we got less than requested, log a note
+                    if (detections.length === 100) {
+                        console.warn(`⚠️ Only got 100 detections - API may have a max limit, or this is all available data`);
+                    }
+
                     return detections;
                 }
             } catch (e) {
