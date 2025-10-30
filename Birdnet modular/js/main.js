@@ -95,6 +95,64 @@ function setupEventListeners() {
         });
     }
 
+    // Settings modal
+    const settingsToggle = document.getElementById('settings-toggle');
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsClose = document.getElementById('settings-close');
+    const settingsCancel = document.getElementById('settings-cancel');
+    const settingsSave = document.getElementById('settings-save');
+    const initialLoadLimitSelect = document.getElementById('initial-load-limit');
+
+    if (settingsToggle && settingsModal) {
+        // Open settings modal
+        settingsToggle.addEventListener('click', () => {
+            // Load current setting
+            const currentLimit = API_CONFIG.initialLoadLimit;
+            initialLoadLimitSelect.value = currentLimit.toString();
+
+            // Update status display
+            const statusDiv = document.getElementById('current-detection-count');
+            if (AppState.data.detections.length > 0) {
+                statusDiv.innerHTML = `
+                    Currently loaded: <strong>${AppState.data.detections.length.toLocaleString()}</strong> detections<br>
+                    Setting: <strong>${currentLimit.toLocaleString()}</strong> max on startup
+                `;
+            } else {
+                statusDiv.innerHTML = `Setting: <strong>${currentLimit.toLocaleString()}</strong> max on startup`;
+            }
+
+            settingsModal.style.display = 'flex';
+        });
+
+        // Close settings modal
+        const closeModal = () => {
+            settingsModal.style.display = 'none';
+        };
+
+        settingsClose?.addEventListener('click', closeModal);
+        settingsCancel?.addEventListener('click', closeModal);
+
+        // Click outside to close
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                closeModal();
+            }
+        });
+
+        // Save settings
+        settingsSave?.addEventListener('click', () => {
+            const newLimit = parseInt(initialLoadLimitSelect.value, 10);
+            API_CONFIG.initialLoadLimit = newLimit;
+            console.log(`✅ Settings saved: initialLoadLimit = ${newLimit}`);
+            console.log('🔄 Reloading page to apply new settings...');
+
+            // Reload the page to apply new settings
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        });
+    }
+
     // Export functions to window for onclick handlers
     window.showSpeciesDetail = (speciesName) => {
         UIRender.showSpeciesDetail(speciesName, AppState.data.analytics);

@@ -5,8 +5,14 @@
 export const API_CONFIG = {
     baseUrl: 'http://192.168.68.129:8080/api/v2',
     refreshInterval: 60000, // 1 minute
-    initialLoadLimit: 5000,  // Maximum detections to fetch on initial load (5000 = ~50 pages = ~30 seconds)
-    // Options: 500 (fast), 2000 (balanced), 5000 (comprehensive), 100000 (everything - slow!)
+    get initialLoadLimit() {
+        // Load from localStorage, fallback to 5000
+        const saved = localStorage.getItem('initialLoadLimit');
+        return saved ? parseInt(saved, 10) : 5000;
+    },
+    set initialLoadLimit(value) {
+        localStorage.setItem('initialLoadLimit', value.toString());
+    }
 };
 
 /**
