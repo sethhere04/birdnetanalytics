@@ -46,7 +46,7 @@ export async function fetchDetections(sinceTime = null) {
             try {
                 const allDetections = [];
                 let offset = 0;
-                const maxDetections = sinceTime ? 200 : 2000; // Incremental: only fetch 2 pages, Initial: fetch all
+                const maxDetections = sinceTime ? 200 : 100000; // Incremental: 2 pages, Initial: up to 100k detections
                 let hasMorePages = true;
 
                 if (sinceTime) {
@@ -78,7 +78,12 @@ export async function fetchDetections(sinceTime = null) {
                         totalAvailable = data.total || 0;
                         totalPages = data.total_pages || 1;
 
-                        console.log(`📄 Page ${data.current_page || 1}/${totalPages}: ${pageDetections.length} detections (${totalAvailable} total available)`);
+                        // Show progress every 10 pages, or every page for first 10 pages
+                        const currentPage = data.current_page || 1;
+                        if (currentPage <= 10 || currentPage % 10 === 0) {
+                            const progress = ((allDetections.length / totalAvailable) * 100).toFixed(1);
+                            console.log(`📄 Page ${currentPage}/${totalPages}: ${allDetections.length}/${totalAvailable} detections (${progress}%)`);
+                        }
 
                         hasMorePages = (data.current_page || 1) < totalPages;
                     } else {

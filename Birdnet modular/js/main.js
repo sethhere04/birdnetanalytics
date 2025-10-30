@@ -140,6 +140,7 @@ async function loadData() {
         if (AppState.isInitialLoad) {
             // Initial load: Fetch ALL available detections (paginated)
             console.log('🔄 Initial load - fetching all available detections...');
+            console.log('⏳ This may take several minutes for large datasets (e.g., 80K detections = ~800 pages)');
             const [speciesData, allDetections] = await Promise.all([
                 fetchSpecies(),
                 fetchDetections()  // Fetches all pages
@@ -168,10 +169,10 @@ async function loadData() {
                 // Prepend new detections to existing array (newest first)
                 AppState.data.detections = [...newDetections, ...AppState.data.detections];
 
-                // Optional: Trim to keep only last 2000 detections in memory
-                if (AppState.data.detections.length > 2000) {
-                    AppState.data.detections = AppState.data.detections.slice(0, 2000);
-                    console.log(`🗑️ Trimmed to 2000 most recent detections`);
+                // Optional: Trim to keep only last 10000 detections in memory (to prevent memory bloat)
+                if (AppState.data.detections.length > 10000) {
+                    AppState.data.detections = AppState.data.detections.slice(0, 10000);
+                    console.log(`🗑️ Trimmed to 10,000 most recent detections`);
                 }
 
                 detections = AppState.data.detections;
