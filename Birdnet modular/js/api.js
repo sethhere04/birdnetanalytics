@@ -12,11 +12,18 @@ export const API_CONFIG = {
  */
 export async function fetchSpecies() {
     try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/analytics/species/summary`);
+        const url = `${API_CONFIG.baseUrl}/analytics/species/summary`;
+        console.log(`📡 Fetching species from: ${url}`);
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        const species = Array.isArray(data) ? data : [];
+
+        console.log(`✅ API returned ${species.length} species`);
+
+        return species;
     } catch (error) {
         console.warn('Species endpoint failed:', error);
         return [];

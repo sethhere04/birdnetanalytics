@@ -140,6 +140,13 @@ async function loadData() {
 
         console.log(`✅ Loaded ${species.length} species and ${detections.length} recent detections`);
 
+        // Debug: Log species count changes
+        if (AppState.data.species.length > 0 && species.length !== AppState.data.species.length) {
+            console.warn(`⚠️ Species count changed from ${AppState.data.species.length} to ${species.length}`);
+            console.log('Previous species:', AppState.data.species.map(s => s.commonName || s.common_name));
+            console.log('New species:', species.map(s => s.commonName || s.common_name));
+        }
+
         // Store raw data
         AppState.data.species = species;
         AppState.data.detections = detections;
