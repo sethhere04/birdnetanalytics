@@ -3,7 +3,7 @@
  */
 
 import { API_CONFIG, fetchSpecies, fetchDetections } from './api.js';
-import { analyzeData } from './analytics.js';
+import * as Analytics from './analytics.js';
 import * as UIRender from './ui-render.js';
 
 console.log('🚀 Main module loaded - starting BirdAnalytics initialization');
@@ -148,7 +148,7 @@ async function loadData() {
         loadSpeciesImages(species);
 
         // Analyze data
-        AppState.data.analytics = analyzeData(species, detections, AppState.filters);
+        AppState.data.analytics = Analytics.analyzeData(species, detections, AppState.filters);
 
         // Check for rare species and send notifications
         checkForRareSpecies(AppState.data.analytics);
@@ -245,7 +245,7 @@ export function applyFilters(filters) {
     AppState.filters = { ...AppState.filters, ...filters };
 
     // Re-analyze with new filters
-    AppState.data.analytics = analyzeData(
+    AppState.data.analytics = Analytics.analyzeData(
         AppState.data.species,
         AppState.data.detections,
         AppState.filters
