@@ -28,14 +28,9 @@ export function getSpeciesImageUrl(speciesName) {
  * Update dashboard header stats
  */
 export function updateDashboardHeader(analytics) {
-    document.getElementById('total-species').textContent = analytics.totalSpecies;
-    document.getElementById('total-detections').textContent = analytics.totalDetections.toLocaleString();
-    document.getElementById('active-today').textContent = analytics.today.species;
+    // Header stats removed - stats are now shown within individual tabs
 
-    const peakHour = analytics.hourly.reduce((max, h) => h.count > max.count ? h : max, { hour: 0, count: 0 });
-    document.getElementById('most-active-time').textContent = `${peakHour.hour}:00`;
-
-    // Update filtered count
+    // Update filtered count (if filter info element exists)
     const filterInfo = document.getElementById('filter-info');
     if (filterInfo) {
         if (analytics.filteredDetections !== analytics.totalDetections) {
