@@ -216,73 +216,34 @@ export function renderDiversityMetrics(speciesData) {
  * Render species tab
  */
 export function renderSpecies(analytics, detections, speciesData) {
-    const allSpecies = analytics.allSpecies;
-
     // Store species data for gallery filters
     currentSpeciesData = speciesData;
 
-    // NEW: Render photo gallery
+    // Render unified species gallery (now shows ALL species)
     renderPhotoGallery(speciesData, 'detections', 0);
 
     // Setup gallery controls
     setupGalleryControls();
 
-    // Render all species list with search/filter capability
-    const container = document.getElementById('all-species-container');
-    if (!container) return;
-
-    if (allSpecies.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🦜</div><p>No species detected yet</p></div>';
-        return;
-    }
-
-    container.innerHTML = allSpecies.map(s => {
-        const imageUrl = getSpeciesImageUrl(s.name);
-        const firstSeen = s.firstSeen.toLocaleDateString();
-        const lastSeen = s.lastSeen.toLocaleDateString();
-
-        return `
-        <div class="species-card" onclick="window.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
-            <div class="species-card-image${imageUrl ? '' : ' placeholder'}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
-                ${!imageUrl ? '🐦' : ''}
-            </div>
-            <div class="species-card-content">
-                <div class="species-card-name">${s.name}</div>
-                <div class="species-card-stats">
-                    <span>${s.count} detections</span>
-                    <span>${(s.avgConfidence * 100).toFixed(1)}% confidence</span>
-                </div>
-                <div class="species-card-dates">
-                    <div>First: ${firstSeen}</div>
-                    <div>Last: ${lastSeen}</div>
-                </div>
-            </div>
-        </div>
-    `}).join('');
-
-    // NEW: Render confidence chart
+    // Render charts
     charts.renderConfidenceChart(detections);
-
-    // NEW: Render calendar heatmap
     charts.renderCalendarHeatmap(detections);
 
-    // NEW: Render next detection predictions
+    // Render next detection predictions
     renderNextDetectionPredictions(speciesData, detections);
 }
 
 /**
- * NEW: Render species photo gallery
+ * NEW: Render species photo gallery (now shows ALL species)
  */
 export function renderPhotoGallery(speciesData, sortBy = 'detections', minConfidence = 0) {
     const container = document.getElementById('photo-gallery');
     if (!container) return;
 
-    // Filter species with images and above confidence threshold
+    // Filter ALL species by confidence threshold (no longer filtering by images)
     let filteredSpecies = speciesData.filter(sp => {
-        const speciesName = sp.commonName || sp.common_name || sp.scientificName;
-        const imageUrl = getSpeciesImageUrl(speciesName);
         const avgConfidence = (sp.avgConfidence || sp.avg_confidence || 0) * 100;
-        return imageUrl && avgConfidence >= minConfidence;
+        return avgConfidence >= minConfidence;
     });
 
     // Sort based on selection
@@ -314,7 +275,7 @@ export function renderPhotoGallery(speciesData, sortBy = 'detections', minConfid
     }
 
     if (filteredSpecies.length === 0) {
-        container.innerHTML = '<div class="gallery-empty"><div class="empty-icon" style="font-size: 4rem;">📸</div><p>No species with photos match your criteria</p></div>';
+        container.innerHTML = '<div class="gallery-empty"><div class="empty-icon" style="font-size: 4rem;">🐦</div><p>No species match your criteria</p></div>';
         return;
     }
 
