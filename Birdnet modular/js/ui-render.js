@@ -1296,7 +1296,11 @@ export function renderEnhancedPredictions(predictions) {
 
         const adjustmentHTML = pred.weatherAdjustment ? '<div class="weather-adjustment ' + (pred.weatherAdjustment > 0 ? 'positive' : 'negative') + '">' + (pred.weatherAdjustment > 0 ? '+' : '') + pred.weatherAdjustment + '% weather impact</div>' : '';
 
-        return '<div class="enhanced-prediction-card"><div class="prediction-date"><div class="date-day">' + pred.date.toLocaleDateString('en-US', { weekday: 'short' }) + '</div><div class="date-date">' + pred.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</div></div>' + weatherHTML + '<div class="prediction-activity"><div class="activity-label">Expected Activity</div><div class="activity-confidence ' + confidenceClass + '"><div class="confidence-bar"><div class="confidence-fill" style="width: ' + pred.confidence + '%"></div></div><div class="confidence-value">' + pred.confidence + '%</div></div></div><div class="prediction-times"><div class="times-label">Peak Times:</div>' + pred.peakTimes.slice(0, 2).map(time => '<div class="time-item">' + time.label + '</div>').join('') + '</div>' + factorsHTML + adjustmentHTML + '</div>';
+        const peakTimesHTML = pred.peakTimes && pred.peakTimes.length > 0
+            ? '<div class="prediction-times"><div class="times-label">Peak Times:</div>' + pred.peakTimes.slice(0, 2).map(time => '<div class="time-item">' + time.label + '</div>').join('') + '</div>'
+            : '';
+
+        return '<div class="enhanced-prediction-card"><div class="prediction-date"><div class="date-day">' + pred.date.toLocaleDateString('en-US', { weekday: 'short' }) + '</div><div class="date-date">' + pred.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</div></div>' + weatherHTML + '<div class="prediction-activity"><div class="activity-label">Expected Activity</div><div class="activity-confidence ' + confidenceClass + '"><div class="confidence-bar"><div class="confidence-fill" style="width: ' + pred.confidence + '%"></div></div><div class="confidence-value">' + pred.confidence + '%</div></div></div>' + peakTimesHTML + factorsHTML + adjustmentHTML + '</div>';
     }).join('');
 
     container.innerHTML = '<div class="enhanced-predictions-grid">' + cardsHTML + '</div>';
