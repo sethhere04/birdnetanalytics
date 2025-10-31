@@ -70,7 +70,9 @@
             <button class="tab" data-tab="migration">🦅 Migration</button>
             <button class="tab" data-tab="activity">Activity Patterns</button>
             <button class="tab" data-tab="feeding">🌻 Feeding</button>
-            <button class="tab" data-tab="insights">Insights</button>
+            <button class="tab" data-tab="insights">💡 Insights</button>
+            <button class="tab" data-tab="trends">📈 Trends</button>
+            <button class="tab" data-tab="analytics">🔬 Analytics</button>
         </div>
 
         <!-- Overview Tab -->
@@ -386,7 +388,7 @@
             </div>
         </div>
 
-        <!-- Insights Tab -->
+        <!-- Insights Tab (Daily/Actionable) -->
         <div id="insights-tab" class="tab-content">
             <div class="grid">
                 <!-- Activity Anomalies -->
@@ -428,6 +430,26 @@
                     </div>
                 </div>
 
+                <!-- AI-Powered Insights -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">💡 AI-Powered Insights</div>
+                        </div>
+                        <div id="insights-list" style="display: grid; gap: 1rem; padding: 1rem;">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Generating insights...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trends Tab (Historical Patterns) -->
+        <div id="trends-tab" class="tab-content">
+            <div class="grid">
                 <!-- Year-over-Year Comparison -->
                 <div class="col-12">
                     <div class="card">
@@ -454,6 +476,41 @@
                     </div>
                 </div>
 
+                <!-- Enhanced Predictions -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🔮 7-Day Activity Forecast</div>
+                            <div class="card-subtitle">Predicted peak activity times</div>
+                        </div>
+                        <div id="enhanced-predictions-container" style="padding: 1rem;">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diversity Trends Over Time -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">📈 Diversity Trends Over Time</div>
+                            <select id="diversity-period-select" class="filter-select" style="width: auto;">
+                                <option value="daily">Last 30 Days</option>
+                                <option value="weekly">Last 12 Weeks</option>
+                                <option value="monthly">Last 12 Months</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="diversity-trends-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab (Deep Dive) -->
+        <div id="analytics-tab" class="tab-content">
+            <div class="grid">
                 <!-- Rarity Scores -->
                 <div class="col-6">
                     <div class="card">
@@ -467,25 +524,19 @@
                     </div>
                 </div>
 
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">Diversity Trends Over Time</div>
-                            <select id="diversity-period-select" class="filter-select" style="width: auto;">
-                                <option value="daily">Last 30 Days</option>
-                                <option value="weekly">Last 12 Weeks</option>
-                                <option value="monthly">Last 12 Months</option>
-                            </select>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="diversity-trends-chart"></canvas>
-                        </div>
+                <!-- Weather Impact Widget -->
+                <div class="col-6">
+                    <div id="weather-impact-widget">
+                        <!-- Populated by JavaScript -->
                     </div>
                 </div>
+
+                <!-- Species Co-occurrence Analysis -->
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">Species Co-occurrence Analysis</div>
+                            <div class="card-title">🔗 Species Co-occurrence Analysis</div>
+                            <div class="card-subtitle">Which species appear together?</div>
                         </div>
                         <div id="cooccurrence-container" style="padding: 1rem;">
                             <div class="loading">
@@ -495,47 +546,16 @@
                         </div>
                     </div>
                 </div>
-                <!-- Weather Impact Widget -->
-                <div class="col-6">
-                    <div id="weather-impact-widget">
-                        <!-- Populated by JavaScript -->
-                    </div>
-                </div>
-
-                <!-- Enhanced Predictions -->
-                <div class="col-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🔮 7-Day Activity Forecast</div>
-                        </div>
-                        <div id="enhanced-predictions-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Species Comparison -->
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">🆚 Species Comparison Tool</div>
+                            <div class="card-subtitle">Compare multiple species side by side</div>
                         </div>
                         <div id="species-comparison-container" style="padding: 1rem;">
                             <!-- Populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">AI-Powered Insights</div>
-                        </div>
-                        <div id="insights-list" style="display: grid; gap: 1rem; padding: 1rem;">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <p>Generating insights...</p>
-                            </div>
                         </div>
                     </div>
                 </div>

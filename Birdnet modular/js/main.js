@@ -608,6 +608,14 @@ function renderCurrentTab() {
             console.log('🎯 Calling renderInsights with:', { analytics, speciesCount: species.length, detectionsCount: detections.length });
             UIRender.renderInsights(analytics, species, detections);
             break;
+        case 'trends':
+            console.log('📈 Calling renderTrends');
+            UIRender.renderTrends(analytics, species, detections);
+            break;
+        case 'analytics':
+            console.log('🔬 Calling renderAnalytics');
+            UIRender.renderAnalytics(analytics, species, detections);
+            break;
     }
 }
 

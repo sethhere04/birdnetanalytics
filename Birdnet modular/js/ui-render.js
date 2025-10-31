@@ -1755,3 +1755,58 @@ export function renderMissingSpeciesAlerts(speciesData, detections) {
         <div class="missing-list">${html}</div>
     `;
 }
+
+/**
+ * Render Trends tab (Historical Patterns)
+ */
+export async function renderTrends(analytics, speciesData, detections) {
+    console.log('📈 renderTrends called');
+
+    // Year-over-Year Comparison
+    renderYearOverYear(detections, speciesData);
+
+    // Species Streaks
+    renderSpeciesStreaks(detections, speciesData);
+
+    // Diversity Trends chart
+    renderDiversityTrends(detections, 'daily');
+
+    // Enhanced Predictions with weather
+    try {
+        const weatherModule = await import('./weather.js');
+        const currentWeather = await weatherModule.getCurrentWeather();
+        const forecast = await weatherModule.getWeatherForecast();
+        const analyticsModule = window.analyticsModule;
+        const predictions = analyticsModule.predictActivityWithWeather(detections, {
+            current: currentWeather,
+            forecast: forecast
+        });
+        renderEnhancedPredictions(predictions);
+    } catch (error) {
+        console.log('Weather forecast unavailable, showing basic predictions');
+        const analyticsModule = window.analyticsModule;
+        const predictions = analyticsModule.predictPeakActivity(detections, 7);
+        renderEnhancedPredictions(predictions);
+    }
+}
+
+/**
+ * Render Analytics tab (Deep Dive)
+ */
+export async function renderAnalytics(analytics, speciesData, detections) {
+    console.log('🔬 renderAnalytics called');
+
+    // Rarity Scores
+    renderRarityScores(speciesData, detections);
+
+    // Co-occurrence Analysis
+    renderCoOccurrence(detections);
+
+    // Weather correlation
+    const weatherModule = await import('./weather.js');
+    const weatherCorrelation = weatherModule.correlateWeatherWithActivity(detections);
+    renderWeatherImpact(weatherCorrelation);
+
+    // Species comparison (show empty state initially)
+    renderSpeciesComparison(null);
+}
