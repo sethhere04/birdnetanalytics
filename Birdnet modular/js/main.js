@@ -35,6 +35,9 @@ const AppState = {
 export async function init() {
     console.log('🔧 Initializing BirdAnalytics...');
 
+    // Register service worker for PWA
+    registerServiceWorker();
+
     // Request notification permission
     requestNotificationPermission();
 
@@ -637,6 +640,21 @@ function setTheme(theme) {
     }
 
     console.log(`🎨 Theme switched to ${theme} mode`);
+}
+
+/**
+ * Register service worker for PWA functionality
+ */
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then((registration) => {
+                console.log('✅ Service Worker registered:', registration.scope);
+            })
+            .catch((error) => {
+                console.error('❌ Service Worker registration failed:', error);
+            });
+    }
 }
 
 /**
