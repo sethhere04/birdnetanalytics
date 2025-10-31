@@ -1197,6 +1197,12 @@ export function calculateYearOverYear(detections, speciesData) {
  * Tracks consecutive days each species has appeared
  */
 export function calculateSpeciesStreaks(detections, speciesData) {
+    console.log('🔥 calculateSpeciesStreaks called:', {
+        detectionsCount: detections.length,
+        speciesCount: speciesData.length,
+        sampleSpecies: speciesData[0]
+    });
+
     const streaks = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1209,9 +1215,11 @@ export function calculateSpeciesStreaks(detections, speciesData) {
             .filter(d => (d.commonName || d.common_name || d.scientificName) === speciesName)
             .map(d => {
                 const date = parseDetectionDate(d);
+                if (!date || isNaN(date.getTime())) return null;
                 date.setHours(0, 0, 0, 0);
                 return date.getTime();
             })
+            .filter(d => d !== null) // Remove invalid dates
             .filter((value, index, self) => self.indexOf(value) === index) // unique dates
             .sort((a, b) => b - a); // newest first
 
@@ -1268,6 +1276,12 @@ export function calculateSpeciesStreaks(detections, speciesData) {
  * Based on detection frequency and historical patterns
  */
 export function calculateRarityScores(speciesData, detections) {
+    console.log('💎 calculateRarityScores called:', {
+        speciesCount: speciesData?.length || 0,
+        detectionsCount: detections?.length || 0,
+        sampleSpecies: speciesData?.[0]
+    });
+
     if (!speciesData || speciesData.length === 0) return [];
 
     const totalDetections = detections.length;
@@ -1281,7 +1295,14 @@ export function calculateRarityScores(speciesData, detections) {
         const frequencyScore = Math.max(0, 100 - ((count / avgDetectionsPerSpecies) * 50));
 
         // Rarity based on how long since first seen
-        const firstSeen = species.firstSeen || new Date(species.first_seen);
+        let firstSeen = species.firstSeen;
+        if (!firstSeen && species.first_seen) {
+            firstSeen = new Date(species.first_seen);
+        }
+        if (!firstSeen || isNaN(firstSeen.getTime())) {
+            firstSeen = new Date(); // Default to now if invalid
+        }
+
         const daysSinceFirst = (Date.now() - firstSeen.getTime()) / (24 * 60 * 60 * 1000);
         const recencyScore = daysSinceFirst > 0 ? Math.min(50, (30 / daysSinceFirst) * 50) : 0;
 
@@ -1309,6 +1330,11 @@ export function calculateRarityScores(speciesData, detections) {
  * Find unusual patterns in bird activity
  */
 export function detectActivityAnomalies(detections, speciesData) {
+    console.log('⚡ detectActivityAnomalies called:', {
+        detectionsCount: detections?.length || 0,
+        speciesCount: speciesData?.length || 0
+    });
+
     const anomalies = [];
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1415,13 +1441,23 @@ export function getMissingSpeciesAlerts(speciesData, detections) {
 
     speciesData.forEach(species => {
         const speciesName = species.commonName || species.common_name || species.scientificName;
-        const lastSeen = species.lastSeen ? new Date(species.lastSeen) : new Date(species.last_seen);
+
+        // Parse lastSeen with error handling
+        let lastSeen = species.lastSeen;
+        if (!lastSeen && species.last_seen) {
+            lastSeen = new Date(species.last_seen);
+        }
+        if (!lastSeen || isNaN(lastSeen.getTime())) {
+            return; // Skip if we can't determine last seen date
+        }
+
         const daysSinceLastSeen = (now - lastSeen) / (24 * 60 * 60 * 1000);
 
         // Get all detections for this species
         const speciesDetections = detections
             .filter(d => (d.commonName || d.common_name || d.scientificName) === speciesName)
             .map(d => parseDetectionDate(d))
+            .filter(d => d && !isNaN(d.getTime())) // Filter out invalid dates
             .sort((a, b) => b - a);
 
         if (speciesDetections.length < 3) return; // Need at least 3 detections
