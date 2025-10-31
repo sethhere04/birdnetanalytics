@@ -4,7 +4,7 @@
 
 export const API_CONFIG = {
     baseUrl: 'http://192.168.68.129:8080/api/v2',
-    audioBaseUrl: 'http://192.168.68.129:8080/api/v1/media/audio',
+    audioBaseUrl: 'http://192.168.68.129:8080/api/v2/audio',
     refreshInterval: 60000, // 1 minute
     get initialLoadLimit() {
         // Load from localStorage, fallback to 5000
@@ -169,40 +169,19 @@ export function parseDetectionDate(detection) {
  * @returns {string|null} - Audio URL or null if not available
  */
 export function getAudioUrl(detection) {
-    // BirdNET-Go audio naming: <scientific_name>_<confidence>_<timestamp>.<extension>
+    // BirdNET-Go v2 API uses detection ID: /api/v2/audio/{id}
 
-    // Get scientific name (replace spaces with underscores)
-    const scientificName = (detection.scientificName || detection.scientific_name || '').replace(/\s+/g, '_');
+    // Get detection ID
+    const detectionId = detection.id || detection.detectionId || detection.noteId;
 
-    // Get confidence (as decimal, e.g., 0.95)
-    const confidence = detection.confidence || 0;
-
-    // Get timestamp from date and time
-    // Format: YYYYMMDD_HHMMSS (e.g., 20251031_143052)
-    if (!detection.date || !detection.time) {
-        console.warn('❌ Missing date/time for audio clip:', detection);
+    if (!detectionId) {
+        console.warn('❌ No detection ID found for audio. Available fields:', Object.keys(detection));
         return null;
     }
 
-    const datePart = detection.date.replace(/-/g, ''); // 2025-10-31 -> 20251031
-    const timePart = detection.time.replace(/:/g, ''); // 14:30:52 -> 143052
-    const timestamp = `${datePart}_${timePart}`;
-
-    // Construct clip name: ScientificName_0.95_20251031_143052.wav
-    // Try common audio extensions
-    const extensions = ['wav', 'mp3', 'ogg'];
-
-    // Build the clip name (try .wav first as it's most common for BirdNET)
-    const clipName = `${scientificName}_${confidence}_${timestamp}.wav`;
-
-    // Construct the audio URL
-    const audioUrl = `${API_CONFIG.audioBaseUrl}?clip=${encodeURIComponent(clipName)}`;
-    console.log('🎵 Constructed audio URL:', audioUrl, 'from detection:', {
-        scientificName,
-        confidence,
-        timestamp,
-        clipName
-    });
+    // Construct the audio URL using the ID
+    const audioUrl = `${API_CONFIG.audioBaseUrl}/${detectionId}`;
+    console.log('🎵 Constructed audio URL:', audioUrl, 'for detection ID:', detectionId);
     return audioUrl;
 }
 
@@ -212,10 +191,6 @@ export function getAudioUrl(detection) {
  * @returns {boolean} - True if audio is likely available
  */
 export function hasAudio(detection) {
-    // Audio is available if we have the required fields to construct the clip name
-    const hasScientificName = !!(detection.scientificName || detection.scientific_name);
-    const hasConfidence = detection.confidence !== undefined && detection.confidence !== null;
-    const hasDateTime = !!(detection.date && detection.time);
-
-    return hasScientificName && hasConfidence && hasDateTime;
+    // Audio is available if we have a detection ID
+    return !!(detection.id || detection.detectionId || detection.noteId);
 }
