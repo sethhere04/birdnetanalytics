@@ -22,6 +22,12 @@
         <span class="theme-toggle-text" id="theme-text">Dark Mode</span>
     </button>
 
+    <!-- Alerts Button -->
+    <button class="settings-toggle" id="alerts-toggle" aria-label="Open alert settings">
+        <span class="settings-icon">🔔</span>
+        <span class="settings-text">Alerts</span>
+    </button>
+
     <!-- Settings Button -->
     <button class="settings-toggle" id="settings-toggle" aria-label="Open settings">
         <span class="settings-icon">⚙️</span>
@@ -537,6 +543,93 @@
             <div class="modal-footer">
                 <button class="btn-secondary" id="settings-cancel">Cancel</button>
                 <button class="btn-primary" id="settings-save">Save & Reload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Settings Modal -->
+    <div id="alerts-modal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h2>🔔 Alert Settings</h2>
+                <button class="modal-close" id="alerts-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Enable Alerts -->
+                <div class="setting-section">
+                    <h3>General</h3>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alerts-enabled" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            Enable Alerts
+                        </label>
+                        <p class="setting-description">Receive notifications for bird detections</p>
+                    </div>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alerts-sound" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            Sound Enabled
+                        </label>
+                        <p class="setting-description">Play sound with notifications</p>
+                    </div>
+                    <div class="setting-item">
+                        <label for="alerts-cooldown">Cooldown Period</label>
+                        <select id="alerts-cooldown" class="setting-select">
+                            <option value="5">5 minutes</option>
+                            <option value="15">15 minutes</option>
+                            <option value="30" selected>30 minutes</option>
+                            <option value="60">1 hour</option>
+                            <option value="120">2 hours</option>
+                        </select>
+                        <p class="setting-description">Minimum time between alerts for the same species</p>
+                    </div>
+                </div>
+
+                <!-- Alert Types -->
+                <div class="setting-section">
+                    <h3>Alert Types</h3>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alert-watched" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            Watched Species
+                        </label>
+                        <p class="setting-description">Alert when a species on your watch list is detected</p>
+                    </div>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alert-rare" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            Rare Species
+                        </label>
+                        <p class="setting-description">Alert for species with 3 or fewer detections</p>
+                    </div>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alert-new" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            New Species
+                        </label>
+                        <p class="setting-description">Alert when a species is detected for the first time</p>
+                    </div>
+                </div>
+
+                <!-- Watched Species -->
+                <div class="setting-section">
+                    <h3>Watched Species (<span id="watched-count">0</span>)</h3>
+                    <button class="btn-primary" id="add-watched-species" style="margin-bottom: 1rem;">
+                        ➕ Add Species to Watch
+                    </button>
+                    <div id="watched-species-list" class="watched-species-list">
+                        <p class="empty-state-text">No species on watch list</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="alerts-cancel">Cancel</button>
+                <button class="btn-primary" id="alerts-save">Save Settings</button>
             </div>
         </div>
     </div>

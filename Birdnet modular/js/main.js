@@ -6,6 +6,7 @@ import { API_CONFIG, fetchSpecies, fetchDetections, parseDetectionDate } from '.
 import * as Analytics from './analytics.js';
 import * as UIRender from './ui-render.js';
 import * as AudioPlayer from './audio-player.js';
+import * as Alerts from './alerts.js';
 
 console.log('🚀 Main module loaded - starting BirdAnalytics initialization');
 
@@ -162,6 +163,93 @@ function setupEventListeners() {
         });
     }
 
+    // Alerts modal setup
+    const alertsToggle = document.getElementById('alerts-toggle');
+    const alertsModal = document.getElementById('alerts-modal');
+    const alertsClose = document.getElementById('alerts-close');
+    const alertsCancel = document.getElementById('alerts-cancel');
+    const alertsSave = document.getElementById('alerts-save');
+    const addWatchedBtn = document.getElementById('add-watched-species');
+
+    if (alertsToggle && alertsModal) {
+        // Open alerts modal
+        alertsToggle.addEventListener('click', () => {
+            const config = Alerts.getAlertConfig();
+
+            // Load current settings into UI
+            document.getElementById('alerts-enabled').checked = config.enabled;
+            document.getElementById('alerts-sound').checked = config.soundEnabled;
+            document.getElementById('alerts-cooldown').value = config.cooldownMinutes.toString();
+            document.getElementById('alert-watched').checked = config.alertTypes.specificSpecies;
+            document.getElementById('alert-rare').checked = config.alertTypes.rareSpecies;
+            document.getElementById('alert-new').checked = config.alertTypes.newSpecies;
+
+            // Render watched species list
+            renderWatchedSpeciesList();
+
+            alertsModal.style.display = 'flex';
+        });
+
+        // Close alerts modal
+        const closeAlertsModal = () => {
+            alertsModal.style.display = 'none';
+        };
+
+        alertsClose?.addEventListener('click', closeAlertsModal);
+        alertsCancel?.addEventListener('click', closeAlertsModal);
+
+        // Click outside to close
+        alertsModal.addEventListener('click', (e) => {
+            if (e.target === alertsModal) {
+                closeAlertsModal();
+            }
+        });
+
+        // Save settings
+        alertsSave?.addEventListener('click', () => {
+            const config = {
+                enabled: document.getElementById('alerts-enabled').checked,
+                soundEnabled: document.getElementById('alerts-sound').checked,
+                cooldownMinutes: parseInt(document.getElementById('alerts-cooldown').value, 10),
+                alertTypes: {
+                    specificSpecies: document.getElementById('alert-watched').checked,
+                    rareSpecies: document.getElementById('alert-rare').checked,
+                    newSpecies: document.getElementById('alert-new').checked
+                },
+                watchedSpecies: Alerts.getWatchedSpecies()
+            };
+
+            Alerts.saveAlertConfig(config);
+            console.log('✅ Alert settings saved');
+            closeAlertsModal();
+        });
+
+        // Add watched species
+        addWatchedBtn?.addEventListener('click', () => {
+            const species = AppState.data.analytics?.allSpecies || [];
+            if (species.length === 0) {
+                alert('No species data available yet. Please wait for data to load.');
+                return;
+            }
+
+            const options = species.slice(0, 30).map((s, i) => `${i + 1}. ${s.name}`).join('\n');
+            const selection = prompt(`Select a species to watch (enter number):\n\n${options}`, '1');
+
+            if (!selection) return;
+
+            const index = parseInt(selection.trim()) - 1;
+            if (index >= 0 && index < species.length) {
+                const speciesName = species[index].name;
+                if (Alerts.addWatchedSpecies(speciesName)) {
+                    console.log(`✅ Added ${speciesName} to watch list`);
+                    renderWatchedSpeciesList();
+                } else {
+                    alert(`${speciesName} is already on your watch list`);
+                }
+            }
+        });
+    }
+
     // Export functions to window for onclick handlers
     window.showSpeciesDetail = (speciesName) => {
         UIRender.showSpeciesDetail(
@@ -227,6 +315,14 @@ function setupEventListeners() {
         UIRender.renderSpeciesComparison(comparison);
     };
 
+    // Remove watched species function
+    window.removeWatchedSpecies = (speciesName) => {
+        if (Alerts.removeWatchedSpecies(speciesName)) {
+            console.log(`✅ Removed ${speciesName} from watch list`);
+            renderWatchedSpeciesList();
+        }
+    };
+
     // Gallery collapse toggle
     window.toggleGalleryCollapse = () => {
         const gallery = document.getElementById('photo-gallery');
@@ -249,6 +345,28 @@ function setupEventListeners() {
             btn.setAttribute('aria-expanded', 'false');
         }
     };
+}
+
+/**
+ * Render watched species list in alerts modal
+ */
+function renderWatchedSpeciesList() {
+    const watched = Alerts.getWatchedSpecies();
+    const container = document.getElementById('watched-species-list');
+    const countEl = document.getElementById('watched-count');
+
+    if (!container) return;
+
+    countEl.textContent = watched.length;
+
+    if (watched.length === 0) {
+        container.innerHTML = '<p class="empty-state-text">No species on watch list</p>';
+        return;
+    }
+
+    container.innerHTML = watched.map(speciesName => {
+        return '<div class="watched-species-item"><span class="watched-species-name">' + speciesName + '</span><button class="btn-remove" onclick="window.removeWatchedSpecies(\'' + speciesName.replace(/'/g, "\\'") + '\')" aria-label="Remove">✕</button></div>';
+    }).join('');
 }
 
 /**
@@ -286,6 +404,7 @@ async function loadData(silent = false) {
     try {
         let detections;
         let species;
+        let newDetections = []; // Track new detections for alerts
 
         // Capture previous species count BEFORE updating
         const previousSpeciesCount = AppState.data.species.length;
@@ -312,13 +431,14 @@ async function loadData(silent = false) {
         } else {
             // Incremental load: Only fetch NEW detections since last check
             console.log('🔄 Incremental refresh - fetching only new detections...');
-            const [speciesData, newDetections] = await Promise.all([
+            const [speciesData, fetchedDetections] = await Promise.all([
                 fetchSpecies(),
                 fetchDetections(AppState.data.lastDetectionTime)  // Pass last detection time
             ]);
 
             species = speciesData;
             AppState.data.species = species;
+            newDetections = fetchedDetections; // Store for alert checking
 
             if (newDetections.length > 0) {
                 console.log(`✅ Found ${newDetections.length} new detections since last refresh`);
@@ -364,6 +484,11 @@ async function loadData(silent = false) {
 
         // Check for rare species and send notifications
         checkForRareSpecies(AppState.data.analytics);
+
+        // Check for custom alerts (only on incremental refreshes with new detections)
+        if (newDetections.length > 0) {
+            Alerts.checkForAlerts(newDetections, AppState.data.analytics, AppState.data.speciesImages);
+        }
 
         // Update UI
         updateUI();
