@@ -4,6 +4,7 @@
 
 export const API_CONFIG = {
     baseUrl: 'http://192.168.68.129:8080/api/v2',
+    audioBaseUrl: 'http://192.168.68.129:8080/api/v1/media/audio',
     refreshInterval: 60000, // 1 minute
     get initialLoadLimit() {
         // Load from localStorage, fallback to 5000
@@ -160,4 +161,36 @@ export function parseDetectionDate(detection) {
 
     // Last resort - use current time
     return new Date();
+}
+
+/**
+ * Get audio URL for a detection
+ * @param {Object} detection - Detection object from API
+ * @returns {string|null} - Audio URL or null if not available
+ */
+export function getAudioUrl(detection) {
+    // BirdNET-Go stores audio clips with various identifier fields
+    // Try different field names that might contain the clip ID or filename
+    const clipId = detection.clipName || detection.clip_name ||
+                   detection.fileName || detection.file_name ||
+                   detection.id || detection.detectionId;
+
+    if (!clipId) {
+        console.warn('No audio clip identifier found for detection:', detection);
+        return null;
+    }
+
+    // Construct the audio URL
+    return `${API_CONFIG.audioBaseUrl}?clip=${encodeURIComponent(clipId)}`;
+}
+
+/**
+ * Check if a detection has audio available
+ * @param {Object} detection - Detection object from API
+ * @returns {boolean} - True if audio is likely available
+ */
+export function hasAudio(detection) {
+    return !!(detection.clipName || detection.clip_name ||
+              detection.fileName || detection.file_name ||
+              detection.id || detection.detectionId);
 }

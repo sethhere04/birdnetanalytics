@@ -5,6 +5,7 @@
 import { API_CONFIG, fetchSpecies, fetchDetections, parseDetectionDate } from './api.js';
 import * as Analytics from './analytics.js';
 import * as UIRender from './ui-render.js';
+import * as AudioPlayer from './audio-player.js';
 
 console.log('🚀 Main module loaded - starting BirdAnalytics initialization');
 
@@ -176,6 +177,11 @@ function setupEventListeners() {
 
     // Export analytics module to window so new rendering functions can access it
     window.analyticsModule = Analytics;
+
+    // Export audio player functions to window for onclick handlers
+    window.playAudio = AudioPlayer.playAudio;
+    window.playAudioInPlayer = AudioPlayer.playAudioInPlayer;
+    window.stopCurrentAudio = AudioPlayer.stopCurrentAudio;
 
     // Weather setup handler
     window.showWeatherSetup = async () => {

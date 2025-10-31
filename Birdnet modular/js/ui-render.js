@@ -6,6 +6,7 @@ import * as charts from './charts.js';
 import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats } from './analytics.js';
 import { getCurrentSeason, getSeasonalRecommendations, getSpeciesFeedingData, getFeedingDataForSpecies } from './feeding.js';
 import { analyzeMigrationPatterns } from './migration.js';
+import * as AudioPlayer from './audio-player.js';
 
 // Store species images loaded from API
 let speciesImagesCache = {};
@@ -760,6 +761,15 @@ export async function showSpeciesDetail(speciesName, analytics, speciesData, det
     const firstSeen = species.firstSeen.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     const lastSeen = species.lastSeen.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
+    // Filter detections for this species
+    const speciesDetections = detections.filter(d => {
+        const detectionName = d.commonName || d.common_name || d.species || d.scientificName;
+        return detectionName === speciesName;
+    });
+
+    // Create audio player component
+    const audioPlayerHTML = AudioPlayer.createAudioPlayer(speciesDetections);
+
     // Show modal with enhanced info
     modalContent.innerHTML = `
         <button class="modal-close" onclick="window.closeSpeciesModal()">&times;</button>
@@ -818,6 +828,11 @@ export async function showSpeciesDetail(speciesName, analytics, speciesData, det
                 </div>
             </div>
         ` : ''}
+
+        <div class="species-detail-section">
+            <h3>🔊 Audio Recordings</h3>
+            ${audioPlayerHTML}
+        </div>
 
         <div class="species-info-section">
             <div class="loading-inline">
@@ -900,6 +915,9 @@ async function fetchWikipediaInfo(speciesName) {
  * Close species detail modal
  */
 export function closeSpeciesModal() {
+    // Stop any playing audio
+    AudioPlayer.stopCurrentAudio();
+
     const modal = document.getElementById('species-modal');
     modal.classList.remove('active');
 }
