@@ -8,7 +8,7 @@ import * as UIRender from './ui-render.js';
 import * as AudioPlayer from './audio-player.js';
 import * as Alerts from './alerts.js';
 
-console.log('🚀 Main module loaded v2024103101 - starting BirdAnalytics initialization');
+console.log('🚀 Main module loaded v2024103102 - starting BirdAnalytics initialization');
 
 /**
  * Main application state
