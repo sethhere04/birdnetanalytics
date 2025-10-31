@@ -739,9 +739,33 @@ export function renderSpeciesFeedingGuide(speciesData) {
 /**
  * Show species detail modal with Wikipedia integration
  */
-export async function showSpeciesDetail(speciesName, analytics) {
+export async function showSpeciesDetail(speciesName, analytics, speciesData, detections) {
     const species = analytics.allSpecies.find(s => s.name === speciesName);
     if (!species) return;
+
+    // Try to find the original species data for scientific name
+    let scientificName = null;
+    if (speciesData) {
+        const originalSpecies = speciesData.find(s =>
+            (s.commonName || s.common_name || s.scientificName) === speciesName
+        );
+        if (originalSpecies) {
+            scientificName = originalSpecies.scientificName || originalSpecies.scientific_name;
+        }
+    }
+
+    // Get feeding preferences from database
+    const feedingPrefs = getFeedingDataForSpecies(speciesName);
+
+    // Get migration pattern
+    let migrationStatus = null;
+    if (speciesData) {
+        const patterns = analyzeMigrationPatterns(speciesData);
+        const pattern = patterns.find(p => p.species === speciesName);
+        if (pattern) {
+            migrationStatus = pattern.pattern;
+        }
+    }
 
     const imageUrl = getSpeciesImageUrl(speciesName);
     const modal = document.getElementById('species-modal');
@@ -750,7 +774,7 @@ export async function showSpeciesDetail(speciesName, analytics) {
     const firstSeen = species.firstSeen.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     const lastSeen = species.lastSeen.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-    // Show modal with basic info first
+    // Show modal with enhanced info
     modalContent.innerHTML = `
         <button class="modal-close" onclick="window.closeSpeciesModal()">&times;</button>
         ${imageUrl ?
@@ -758,6 +782,8 @@ export async function showSpeciesDetail(speciesName, analytics) {
             `<div class="species-detail-placeholder">🐦</div>`
         }
         <h2 class="species-detail-name">${speciesName}</h2>
+        ${scientificName ? `<div class="species-scientific-name">${scientificName}</div>` : ''}
+
         <div class="species-detail-stats">
             <div class="stat">
                 <div class="stat-label">Total Detections</div>
@@ -776,6 +802,37 @@ export async function showSpeciesDetail(speciesName, analytics) {
                 <div class="stat-value">${lastSeen}</div>
             </div>
         </div>
+
+        ${migrationStatus ? `
+            <div class="species-detail-section">
+                <h3>🦅 Migration Pattern</h3>
+                <div class="migration-badge migration-${migrationStatus.toLowerCase()}">${migrationStatus}</div>
+            </div>
+        ` : ''}
+
+        ${feedingPrefs ? `
+            <div class="species-detail-section">
+                <h3>🌾 Feeding Preferences</h3>
+                <div class="feeding-info">
+                    <div class="feeding-subsection">
+                        <strong>Diet:</strong> ${feedingPrefs.diet}
+                    </div>
+                    <div class="feeding-subsection">
+                        <strong>Favorite Foods:</strong>
+                        <div class="food-tags">
+                            ${feedingPrefs.foods.slice(0, 5).map(f => `<span class="food-tag">${f}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="feeding-subsection">
+                        <strong>Recommended Feeders:</strong>
+                        <div class="food-tags">
+                            ${feedingPrefs.feeder.map(f => `<span class="feeder-tag">${f}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        ` : ''}
+
         <div class="species-info-section">
             <div class="loading-inline">
                 <div class="spinner-small"></div>

@@ -163,7 +163,12 @@ function setupEventListeners() {
 
     // Export functions to window for onclick handlers
     window.showSpeciesDetail = (speciesName) => {
-        UIRender.showSpeciesDetail(speciesName, AppState.data.analytics);
+        UIRender.showSpeciesDetail(
+            speciesName,
+            AppState.data.analytics,
+            AppState.data.species,
+            AppState.data.detections
+        );
     };
     window.closeSpeciesModal = () => {
         UIRender.closeSpeciesModal();
