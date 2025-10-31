@@ -199,10 +199,16 @@ function switchTab(tabName) {
 
 /**
  * Load data from API with incremental loading support
+ * @param {boolean} silent - If true, don't show full-screen loading overlay (for auto-refresh)
  */
-async function loadData() {
+async function loadData(silent = false) {
     console.log('📡 Fetching data from BirdNET-Go API...');
-    UIRender.showLoading();
+
+    if (!silent) {
+        UIRender.showLoading();
+    } else {
+        UIRender.showRefreshIndicator();
+    }
 
     try {
         let detections;
@@ -291,9 +297,15 @@ async function loadData() {
 
     } catch (error) {
         console.error('❌ Error loading data:', error);
-        UIRender.showError('Failed to load bird data. Check API connection.');
+        if (!silent) {
+            UIRender.showError('Failed to load bird data. Check API connection.');
+        }
     } finally {
-        UIRender.hideLoading();
+        if (!silent) {
+            UIRender.hideLoading();
+        } else {
+            UIRender.hideRefreshIndicator();
+        }
     }
 }
 
@@ -367,7 +379,7 @@ function renderCurrentTab() {
 function startAutoRefresh() {
     setInterval(() => {
         console.log('🔄 Auto-refreshing data...');
-        loadData();
+        loadData(true); // Silent refresh - don't show full-screen loading overlay
     }, API_CONFIG.refreshInterval);
 }
 

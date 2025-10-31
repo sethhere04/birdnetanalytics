@@ -959,6 +959,28 @@ export function hideLoading() {
 }
 
 /**
+ * Show subtle refresh indicator (for background auto-refresh)
+ */
+export function showRefreshIndicator() {
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.classList.add('refreshing');
+        refreshBtn.disabled = true;
+    }
+}
+
+/**
+ * Hide refresh indicator
+ */
+export function hideRefreshIndicator() {
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.classList.remove('refreshing');
+        refreshBtn.disabled = false;
+    }
+}
+
+/**
  * Render diversity trends chart
  */
 export function renderDiversityTrends(detections, periodType = 'daily') {
