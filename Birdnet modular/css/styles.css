@@ -2427,8 +2427,6 @@ body {
 /* Settings Toggle Button */
 .settings-toggle {
     position: fixed;
-    top: 5rem;
-    right: 1rem;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 50px;
@@ -2445,6 +2443,17 @@ body {
 .settings-toggle:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px var(--shadow);
+}
+
+/* Position each button individually */
+#alerts-toggle {
+    top: 1rem;
+    right: 1rem;
+}
+
+#settings-toggle {
+    top: 4rem;
+    right: 1rem;
 }
 
 .settings-icon {
@@ -2733,9 +2742,16 @@ body {
 /* Responsive adjustments for settings */
 @media (max-width: 768px) {
     .settings-toggle {
-        top: 4.5rem;
-        right: 0.5rem;
         padding: 0.5rem 1rem;
+        right: 0.5rem;
+    }
+
+    #alerts-toggle {
+        top: 0.5rem;
+    }
+
+    #settings-toggle {
+        top: 3.5rem;
     }
 
     .settings-text {

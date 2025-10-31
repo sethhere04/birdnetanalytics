@@ -16,12 +16,6 @@
     <link rel="stylesheet" href="css/styles.css?v=2024102907">
 </head>
 <body>
-    <!-- Dark Mode Toggle -->
-    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
-        <span class="theme-toggle-icon" id="theme-icon">🌙</span>
-        <span class="theme-toggle-text" id="theme-text">Dark Mode</span>
-    </button>
-
     <!-- Alerts Button -->
     <button class="settings-toggle" id="alerts-toggle" aria-label="Open alert settings">
         <span class="settings-icon">🔔</span>
@@ -514,6 +508,18 @@
                 <button class="modal-close" id="settings-close">&times;</button>
             </div>
             <div class="modal-body">
+                <div class="setting-section">
+                    <h3>Appearance</h3>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="theme-toggle-setting" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            <span id="theme-label-text">Dark Mode</span>
+                        </label>
+                        <p class="setting-description">Toggle between light and dark theme</p>
+                    </div>
+                </div>
+
                 <div class="setting-section">
                     <h3>Data Loading</h3>
                     <div class="setting-item">

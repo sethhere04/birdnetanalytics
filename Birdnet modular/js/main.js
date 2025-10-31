@@ -68,15 +68,9 @@ function setupEventListeners() {
         refreshBtn.addEventListener('click', () => loadData());
     }
 
-    // Dark mode toggle
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', toggleTheme);
-
-        // Load saved theme preference
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        setTheme(savedTheme);
-    }
+    // Load saved theme preference on startup
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
 
     // Modal close (clicking outside)
     const modal = document.getElementById('species-modal');
@@ -116,7 +110,14 @@ function setupEventListeners() {
     if (settingsToggle && settingsModal) {
         // Open settings modal
         settingsToggle.addEventListener('click', () => {
-            // Load current setting
+            // Load current theme setting
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const themeToggleSetting = document.getElementById('theme-toggle-setting');
+            if (themeToggleSetting) {
+                themeToggleSetting.checked = (currentTheme === 'dark');
+            }
+
+            // Load current data loading setting
             const currentLimit = API_CONFIG.initialLoadLimit;
             initialLoadLimitSelect.value = currentLimit.toString();
 
@@ -133,6 +134,15 @@ function setupEventListeners() {
 
             settingsModal.style.display = 'flex';
         });
+
+        // Theme toggle handler
+        const themeToggleSetting = document.getElementById('theme-toggle-setting');
+        if (themeToggleSetting) {
+            themeToggleSetting.addEventListener('change', (e) => {
+                const newTheme = e.target.checked ? 'dark' : 'light';
+                setTheme(newTheme);
+            });
+        }
 
         // Close settings modal
         const closeModal = () => {
@@ -614,16 +624,16 @@ function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
 
-    // Update toggle button
-    const icon = document.getElementById('theme-icon');
-    const text = document.getElementById('theme-text');
+    // Update toggle checkbox and label in settings modal
+    const themeToggleSetting = document.getElementById('theme-toggle-setting');
+    const themeLabelText = document.getElementById('theme-label-text');
 
-    if (theme === 'dark') {
-        if (icon) icon.textContent = '☀️';
-        if (text) text.textContent = 'Light Mode';
-    } else {
-        if (icon) icon.textContent = '🌙';
-        if (text) text.textContent = 'Dark Mode';
+    if (themeToggleSetting) {
+        themeToggleSetting.checked = (theme === 'dark');
+    }
+
+    if (themeLabelText) {
+        themeLabelText.textContent = (theme === 'dark') ? 'Dark Mode' : 'Light Mode';
     }
 
     console.log(`🎨 Theme switched to ${theme} mode`);
