@@ -3,7 +3,7 @@
  */
 
 import * as charts from './charts.js';
-import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats } from './analytics.js';
+import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats, getSpeciesForPeriod } from './analytics.js';
 import { getCurrentSeason, getSeasonalRecommendations, getSpeciesFeedingData, getFeedingDataForSpecies } from './feeding.js';
 import { analyzeMigrationPatterns } from './migration.js';
 import * as AudioPlayer from './audio-player.js';
@@ -13,6 +13,9 @@ let speciesImagesCache = {};
 
 // Store current species data for gallery filters
 let currentSpeciesData = [];
+
+// Store current detections for period filtering
+let currentDetections = [];
 
 /**
  * Set species images cache
@@ -50,6 +53,9 @@ export function updateDashboardHeader(analytics) {
  * Render overview tab
  */
 export function renderOverview(analytics, speciesData, detections) {
+    // Store detections for period filtering
+    currentDetections = detections;
+
     // Daily activity chart
     charts.renderDailyChart(analytics.daily);
 
@@ -96,7 +102,6 @@ export function renderTopSpeciesList(species) {
             </div>
             <div class="species-info">
                 <div class="species-name">${s.name}</div>
-                <div class="species-meta">${(s.avgConfidence * 100).toFixed(1)}% confidence</div>
             </div>
             <div class="species-count">${s.count}</div>
         </div>
@@ -145,7 +150,7 @@ export function renderComparisonCards(detections, speciesData) {
     const weekChange = stats.thisWeek.species - stats.lastWeek.species;
 
     container.innerHTML = `
-        <div class="comparison-card">
+        <div class="comparison-card clickable" onclick="window.showPeriodSpecies('today')">
             <div class="comparison-label">Today</div>
             <div class="comparison-value">${stats.today.species}</div>
             <div class="comparison-subtext">species</div>
@@ -153,13 +158,13 @@ export function renderComparisonCards(detections, speciesData) {
                 ${todayChange >= 0 ? '↑' : '↓'} ${Math.abs(todayChange)} vs yesterday
             </div>
         </div>
-        <div class="comparison-card">
+        <div class="comparison-card clickable" onclick="window.showPeriodSpecies('yesterday')">
             <div class="comparison-label">Yesterday</div>
             <div class="comparison-value">${stats.yesterday.species}</div>
             <div class="comparison-subtext">species</div>
             <div class="comparison-meta">${stats.yesterday.detections} detections</div>
         </div>
-        <div class="comparison-card">
+        <div class="comparison-card clickable" onclick="window.showPeriodSpecies('thisWeek')">
             <div class="comparison-label">This Week</div>
             <div class="comparison-value">${stats.thisWeek.species}</div>
             <div class="comparison-subtext">species</div>
@@ -167,7 +172,7 @@ export function renderComparisonCards(detections, speciesData) {
                 ${weekChange >= 0 ? '↑' : '↓'} ${Math.abs(weekChange)} vs last week
             </div>
         </div>
-        <div class="comparison-card">
+        <div class="comparison-card clickable" onclick="window.showPeriodSpecies('allTime')">
             <div class="comparison-label">All Time</div>
             <div class="comparison-value">${stats.allTime.species}</div>
             <div class="comparison-subtext">species</div>
@@ -1283,6 +1288,76 @@ export function renderEnhancedPredictions(predictions) {
     }).join('');
 
     container.innerHTML = '<div class="enhanced-predictions-grid">' + cardsHTML + '</div>';
+}
+
+/**
+ * Show species for a specific time period in a modal
+ */
+export function showPeriodSpecies(period) {
+    const periodData = getSpeciesForPeriod(period, currentDetections, currentSpeciesData);
+
+    if (!periodData || periodData.species.length === 0) {
+        return;
+    }
+
+    const modal = document.getElementById('period-species-modal');
+    if (!modal) {
+        console.error('Period species modal not found');
+        return;
+    }
+
+    const modalContent = modal.querySelector('.modal-content');
+
+    // Build species list HTML
+    const speciesListHTML = periodData.species.map(species => {
+        const imageUrl = getSpeciesImageUrl(species.name);
+        return `
+            <div class="species-item" onclick="window.showSpeciesDetail('${species.name.replace(/'/g, "\\'")}'); window.closePeriodModal();">
+                <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                    ${!imageUrl ? '🐦' : ''}
+                </div>
+                <div class="species-info">
+                    <div class="species-name">${species.name}</div>
+                    <div class="species-meta">${species.count} detection${species.count !== 1 ? 's' : ''}</div>
+                </div>
+                <div class="species-count">${(species.avgConfidence * 100).toFixed(1)}%</div>
+            </div>
+        `;
+    }).join('');
+
+    modalContent.innerHTML = `
+        <div class="modal-header">
+            <h2>${periodData.label} Species</h2>
+            <button class="modal-close" onclick="window.closePeriodModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="period-species-stats">
+                <div class="stat-item">
+                    <span class="stat-value">${periodData.species.length}</span>
+                    <span class="stat-label">Unique Species</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">${periodData.totalDetections}</span>
+                    <span class="stat-label">Total Detections</span>
+                </div>
+            </div>
+            <div class="species-list">
+                ${speciesListHTML}
+            </div>
+        </div>
+    `;
+
+    modal.classList.add('active');
+}
+
+/**
+ * Close period species modal
+ */
+export function closePeriodModal() {
+    const modal = document.getElementById('period-species-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
 }
 
 /**

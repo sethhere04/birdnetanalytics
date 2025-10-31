@@ -517,6 +517,80 @@ export function calculateComparisonStats(detections, species) {
 }
 
 /**
+ * Get species list for a specific time period
+ */
+export function getSpeciesForPeriod(period, detections, speciesData) {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - 7);
+
+    let filteredDetections;
+    let periodLabel;
+
+    switch (period) {
+        case 'today':
+            filteredDetections = detections.filter(d => {
+                const date = parseDetectionDate(d);
+                return date >= todayStart;
+            });
+            periodLabel = 'Today';
+            break;
+        case 'yesterday':
+            filteredDetections = detections.filter(d => {
+                const date = parseDetectionDate(d);
+                return date >= yesterdayStart && date < todayStart;
+            });
+            periodLabel = 'Yesterday';
+            break;
+        case 'thisWeek':
+            filteredDetections = detections.filter(d => {
+                const date = parseDetectionDate(d);
+                return date >= weekStart;
+            });
+            periodLabel = 'This Week';
+            break;
+        case 'allTime':
+            filteredDetections = detections;
+            periodLabel = 'All Time';
+            break;
+        default:
+            filteredDetections = detections;
+            periodLabel = 'All Time';
+    }
+
+    // Get unique species with their detection counts for the period
+    const speciesMap = new Map();
+    filteredDetections.forEach(d => {
+        const name = d.commonName || d.common_name || d.scientificName;
+        if (!speciesMap.has(name)) {
+            speciesMap.set(name, {
+                name: name,
+                count: 0,
+                avgConfidence: 0,
+                confidenceSum: 0
+            });
+        }
+        const species = speciesMap.get(name);
+        species.count++;
+        species.confidenceSum += (d.confidence || 0);
+        species.avgConfidence = species.confidenceSum / species.count;
+    });
+
+    // Convert to array and sort by count
+    const speciesList = Array.from(speciesMap.values())
+        .sort((a, b) => b.count - a.count);
+
+    return {
+        label: periodLabel,
+        species: speciesList,
+        totalDetections: filteredDetections.length
+    };
+}
+
+/**
  * Calculate diversity trends over time
  * Returns diversity metrics (Shannon, Simpson, Richness) for each time period
  */

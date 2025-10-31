@@ -287,6 +287,14 @@ function setupEventListeners() {
         UIRender.closeSpeciesModal();
     };
 
+    // Export period species functions for onclick handlers
+    window.showPeriodSpecies = (period) => {
+        UIRender.showPeriodSpecies(period);
+    };
+    window.closePeriodModal = () => {
+        UIRender.closePeriodModal();
+    };
+
     // Export analytics module to window so new rendering functions can access it
     window.analyticsModule = Analytics;
 

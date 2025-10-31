@@ -880,6 +880,17 @@ body {
     text-align: center;
 }
 
+.comparison-card.clickable {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.comparison-card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+}
+
 .comparison-label {
     font-size: 0.875rem;
     color: var(--text-light);
@@ -3389,4 +3400,35 @@ body {
     .enhanced-predictions-grid {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     }
+}
+
+/* Period Species Stats */
+.period-species-stats {
+    display: flex;
+    gap: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+}
+
+.period-species-stats .stat-item {
+    text-align: center;
+}
+
+.period-species-stats .stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+}
+
+.period-species-stats .stat-label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
