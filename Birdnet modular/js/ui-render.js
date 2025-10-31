@@ -3,7 +3,7 @@
  */
 
 import * as charts from './charts.js';
-import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats, getSpeciesForPeriod } from './analytics.js';
+import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats, getSpeciesForPeriod, calculateYearOverYear, calculateSpeciesStreaks, calculateRarityScores, detectActivityAnomalies, getMissingSpeciesAlerts, predictBestWatchTimes } from './analytics.js';
 import { getCurrentSeason, getSeasonalRecommendations, getSpeciesFeedingData, getFeedingDataForSpecies } from './feeding.js';
 import { analyzeMigrationPatterns } from './migration.js';
 import * as AudioPlayer from './audio-player.js';
@@ -529,6 +529,24 @@ export function renderMigration(speciesData) {
  * Render insights tab
  */
 export async function renderInsights(analytics, speciesData, detections) {
+    // NEW: Activity anomalies (today's alerts)
+    renderActivityAnomalies(detections, speciesData);
+
+    // NEW: Missing species alerts
+    renderMissingSpeciesAlerts(speciesData, detections);
+
+    // NEW: Best watch times
+    renderBestWatchTimes(detections);
+
+    // NEW: Year-over-year comparison
+    renderYearOverYear(detections, speciesData);
+
+    // NEW: Species streaks
+    renderSpeciesStreaks(detections, speciesData);
+
+    // NEW: Rarity scores
+    renderRarityScores(speciesData, detections);
+
     // Render diversity trends chart (default to daily view)
     renderDiversityTrends(detections, 'daily');
 
@@ -1369,4 +1387,365 @@ function getActivityClass(score) {
     if (score >= 4) return 'moderate';
     if (score >= 2) return 'low';
     return 'very-low';
+}
+
+/**
+ * Render year-over-year comparison
+ */
+export function renderYearOverYear(detections, speciesData) {
+    const container = document.getElementById('year-over-year-container');
+    if (!container) return;
+
+    const yoyData = calculateYearOverYear(detections, speciesData);
+
+    if (!yoyData.lastYear.species || yoyData.lastYear.species === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Need at least one year of data for year-over-year comparison</p></div>';
+        return;
+    }
+
+    const speciesChangeClass = parseInt(yoyData.changes.species) >= 0 ? 'positive' : 'negative';
+    const detectionChangeClass = parseInt(yoyData.changes.detections) >= 0 ? 'positive' : 'negative';
+
+    let html = `
+        <div class="yoy-summary">
+            <div class="yoy-card">
+                <div class="yoy-label">This Year (YTD)</div>
+                <div class="yoy-value">${yoyData.thisYear.species}</div>
+                <div class="yoy-subtext">species</div>
+                <div class="yoy-meta">${yoyData.thisYear.detections.toLocaleString()} detections</div>
+            </div>
+            <div class="yoy-card">
+                <div class="yoy-label">Last Year (Same Period)</div>
+                <div class="yoy-value">${yoyData.lastYear.species}</div>
+                <div class="yoy-subtext">species</div>
+                <div class="yoy-meta">${yoyData.lastYear.detections.toLocaleString()} detections</div>
+            </div>
+            <div class="yoy-card ${speciesChangeClass}">
+                <div class="yoy-label">Species Change</div>
+                <div class="yoy-value">${yoyData.changes.species >= 0 ? '+' : ''}${yoyData.changes.species}</div>
+                <div class="yoy-subtext">${yoyData.changes.speciesPercent >= 0 ? '+' : ''}${yoyData.changes.speciesPercent}%</div>
+            </div>
+            <div class="yoy-card ${detectionChangeClass}">
+                <div class="yoy-label">Detection Change</div>
+                <div class="yoy-value">${yoyData.changes.detections >= 0 ? '+' : ''}${yoyData.changes.detections}</div>
+                <div class="yoy-subtext">${yoyData.changes.detectionsPercent >= 0 ? '+' : ''}${yoyData.changes.detectionsPercent}%</div>
+            </div>
+        </div>
+    `;
+
+    if (yoyData.newSpecies.length > 0) {
+        html += `
+            <div class="yoy-highlights">
+                <h4>🆕 New Species This Year (${yoyData.newSpecies.length})</h4>
+                <div class="species-chips">
+                    ${yoyData.newSpecies.slice(0, 10).map(s => `<span class="species-chip">${s}</span>`).join('')}
+                    ${yoyData.newSpecies.length > 10 ? `<span class="species-chip-more">+${yoyData.newSpecies.length - 10} more</span>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    if (yoyData.missingSpecies.length > 0) {
+        html += `
+            <div class="yoy-highlights">
+                <h4>❓ Not Seen This Year (${yoyData.missingSpecies.length})</h4>
+                <div class="species-chips">
+                    ${yoyData.missingSpecies.slice(0, 10).map(s => `<span class="species-chip missing">${s}</span>`).join('')}
+                    ${yoyData.missingSpecies.length > 10 ? `<span class="species-chip-more">+${yoyData.missingSpecies.length - 10} more</span>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+/**
+ * Render species streaks
+ */
+export function renderSpeciesStreaks(detections, speciesData) {
+    const container = document.getElementById('species-streaks-container');
+    if (!container) return;
+
+    const streaks = calculateSpeciesStreaks(detections, speciesData);
+
+    if (streaks.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No active streaks yet</p></div>';
+        return;
+    }
+
+    const activeStreaks = streaks.filter(s => s.isActive);
+    const inactiveStreaks = streaks.filter(s => !s.isActive).slice(0, 5);
+
+    let html = '';
+
+    if (activeStreaks.length > 0) {
+        html += `
+            <div class="streaks-section">
+                <h4>🔥 Active Streaks (${activeStreaks.length})</h4>
+                <div class="streaks-list">
+                    ${activeStreaks.map(streak => {
+                        const imageUrl = getSpeciesImageUrl(streak.species);
+                        return `
+                            <div class="streak-card active">
+                                <div class="streak-header">
+                                    <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                                        ${!imageUrl ? '🐦' : ''}
+                                    </div>
+                                    <div class="streak-info">
+                                        <strong>${streak.species}</strong>
+                                        <span class="streak-dates">Last seen: ${streak.lastSeen.toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                                <div class="streak-stats">
+                                    <div class="streak-stat current">
+                                        <div class="streak-icon">🔥</div>
+                                        <div class="streak-numbers">
+                                            <div class="streak-value">${streak.currentStreak}</div>
+                                            <div class="streak-label">Current</div>
+                                        </div>
+                                    </div>
+                                    <div class="streak-stat best">
+                                        <div class="streak-icon">🏆</div>
+                                        <div class="streak-numbers">
+                                            <div class="streak-value">${streak.bestStreak}</div>
+                                            <div class="streak-label">Best Ever</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    if (inactiveStreaks.length > 0) {
+        html += `
+            <div class="streaks-section">
+                <h4>📊 Past Streaks (Best Records)</h4>
+                <div class="streaks-list">
+                    ${inactiveStreaks.map(streak => {
+                        const imageUrl = getSpeciesImageUrl(streak.species);
+                        return `
+                            <div class="streak-card inactive">
+                                <div class="streak-header">
+                                    <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                                        ${!imageUrl ? '🐦' : ''}
+                                    </div>
+                                    <div class="streak-info">
+                                        <strong>${streak.species}</strong>
+                                        <span class="streak-dates">Last seen: ${streak.lastSeen.toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                                <div class="streak-stats">
+                                    <div class="streak-stat best">
+                                        <div class="streak-icon">🏆</div>
+                                        <div class="streak-numbers">
+                                            <div class="streak-value">${streak.bestStreak}</div>
+                                            <div class="streak-label">Best Streak</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+/**
+ * Render rarity scores
+ */
+export function renderRarityScores(speciesData, detections) {
+    const container = document.getElementById('rarity-scores-container');
+    if (!container) return;
+
+    const rarityScores = calculateRarityScores(speciesData, detections);
+
+    if (rarityScores.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No species data available</p></div>';
+        return;
+    }
+
+    const html = rarityScores.slice(0, 20).map(score => {
+        const imageUrl = getSpeciesImageUrl(score.species);
+        const rarityClass = score.rarityLevel.toLowerCase().replace(' ', '-');
+
+        return `
+            <div class="rarity-card ${rarityClass}" onclick="window.showSpeciesDetail('${score.species.replace(/'/g, "\\'")}')">
+                <div class="rarity-header">
+                    <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                        ${!imageUrl ? '🐦' : ''}
+                    </div>
+                    <div class="rarity-info">
+                        <strong>${score.species}</strong>
+                        <span class="rarity-badge ${rarityClass}">${score.rarityLevel}</span>
+                    </div>
+                </div>
+                <div class="rarity-stats">
+                    <div class="rarity-score">
+                        <div class="score-bar">
+                            <div class="score-fill ${rarityClass}" style="width: ${score.rarityScore}%"></div>
+                        </div>
+                        <span class="score-value">${score.rarityScore}/100</span>
+                    </div>
+                    <div class="rarity-meta">
+                        ${score.detections} detection${score.detections !== 1 ? 's' : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `<div class="rarity-list">${html}</div>`;
+}
+
+/**
+ * Render activity anomalies
+ */
+export function renderActivityAnomalies(detections, speciesData) {
+    const container = document.getElementById('activity-anomalies-container');
+    if (!container) return;
+
+    const anomalies = detectActivityAnomalies(detections, speciesData);
+
+    if (anomalies.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No unusual activity detected today</p></div>';
+        return;
+    }
+
+    const html = anomalies.map(anomaly => {
+        const typeClass = anomaly.type;
+        return `
+            <div class="anomaly-card ${typeClass}">
+                <div class="anomaly-icon">${anomaly.icon}</div>
+                <div class="anomaly-content">
+                    <div class="anomaly-message">${anomaly.message}</div>
+                    ${anomaly.average ? `<div class="anomaly-details">30-day average: ${anomaly.average} per day</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="anomalies-header">
+            <h4>⚡ Today's Activity Alerts</h4>
+            <span class="anomalies-count">${anomalies.length} alert${anomalies.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="anomalies-list">${html}</div>
+    `;
+}
+
+/**
+ * Render best watch times
+ */
+export function renderBestWatchTimes(detections) {
+    const container = document.getElementById('best-watch-times-container');
+    if (!container) return;
+
+    const watchTimes = predictBestWatchTimes(detections);
+
+    if (!watchTimes.today || watchTimes.today.bestTimes.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Need more data to predict best watch times</p></div>';
+        return;
+    }
+
+    const today = watchTimes.today;
+    const html = `
+        <div class="watch-times-today">
+            <h4>⏰ Best Times Today (${today.day})</h4>
+            <div class="best-times-list">
+                ${today.bestTimes.map((time, index) => `
+                    <div class="best-time-card rank-${index + 1}">
+                        <div class="time-rank">#${index + 1}</div>
+                        <div class="time-info">
+                            <div class="time-label">${time.label}</div>
+                            <div class="time-range">${time.time}</div>
+                        </div>
+                        <div class="time-activity">
+                            <div class="activity-value">${time.activity}</div>
+                            <div class="activity-label">detections</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        <div class="watch-times-weekly">
+            <h4>📅 Weekly Pattern</h4>
+            <div class="weekly-times-grid">
+                ${watchTimes.weekly.map(day => `
+                    <div class="weekly-day ${day.day === today.day ? 'today' : ''}">
+                        <div class="day-name">${day.day.slice(0, 3)}</div>
+                        <div class="day-best-time">${day.bestTimes[0].hour}:00</div>
+                        <div class="day-activity">${day.peakActivity}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+/**
+ * Render missing species alerts
+ */
+export function renderMissingSpeciesAlerts(speciesData, detections) {
+    const container = document.getElementById('missing-species-container');
+    if (!container) return;
+
+    const alerts = getMissingSpeciesAlerts(speciesData, detections);
+
+    if (alerts.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>All regular visitors are on schedule!</p></div>';
+        return;
+    }
+
+    const html = alerts.map(alert => {
+        const imageUrl = getSpeciesImageUrl(alert.species);
+        const urgencyClass = alert.urgency;
+
+        return `
+            <div class="missing-species-card ${urgencyClass}" onclick="window.showSpeciesDetail('${alert.species.replace(/'/g, "\\'")}')">
+                <div class="missing-header">
+                    <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                        ${!imageUrl ? '🐦' : ''}
+                    </div>
+                    <div class="missing-info">
+                        <strong>${alert.species}</strong>
+                        <span class="urgency-badge ${urgencyClass}">${alert.urgency} urgency</span>
+                    </div>
+                </div>
+                <div class="missing-stats">
+                    <div class="missing-stat">
+                        <span class="stat-label">Last Seen</span>
+                        <span class="stat-value">${alert.daysSinceLastSeen} days ago</span>
+                    </div>
+                    <div class="missing-stat">
+                        <span class="stat-label">Usually Every</span>
+                        <span class="stat-value">${alert.avgDaysBetween} days</span>
+                    </div>
+                    <div class="missing-stat">
+                        <span class="stat-label">Overdue By</span>
+                        <span class="stat-value">${alert.daysOverdue} days</span>
+                    </div>
+                </div>
+                <div class="missing-message">${alert.message}</div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="missing-header-section">
+            <h4>❓ Missing Regular Visitors</h4>
+            <span class="missing-count">${alerts.length} species</span>
+        </div>
+        <div class="missing-list">${html}</div>
+    `;
 }

@@ -1112,3 +1112,395 @@ export function predictActivityWithWeather(detections, weatherData) {
 
     return enhancedPredictions;
 }
+
+/**
+ * Calculate year-over-year comparison
+ * Compares current period to same period last year
+ */
+export function calculateYearOverYear(detections, speciesData) {
+    const now = new Date();
+    const thisYearStart = new Date(now.getFullYear(), 0, 1);
+    const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
+    const lastYearEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+
+    // This year (YTD)
+    const thisYearDetections = detections.filter(d => {
+        const date = parseDetectionDate(d);
+        return date >= thisYearStart;
+    });
+    const thisYearSpecies = new Set(thisYearDetections.map(d =>
+        d.commonName || d.common_name || d.scientificName
+    ));
+
+    // Last year (same period)
+    const lastYearDetections = detections.filter(d => {
+        const date = parseDetectionDate(d);
+        return date >= lastYearStart && date <= lastYearEnd;
+    });
+    const lastYearSpecies = new Set(lastYearDetections.map(d =>
+        d.commonName || d.common_name || d.scientificName
+    ));
+
+    // Calculate monthly breakdown
+    const monthlyComparison = [];
+    for (let month = 0; month <= now.getMonth(); month++) {
+        const thisYear = detections.filter(d => {
+            const date = parseDetectionDate(d);
+            return date.getFullYear() === now.getFullYear() && date.getMonth() === month;
+        });
+        const lastYear = detections.filter(d => {
+            const date = parseDetectionDate(d);
+            return date.getFullYear() === now.getFullYear() - 1 && date.getMonth() === month;
+        });
+
+        monthlyComparison.push({
+            month: new Date(now.getFullYear(), month, 1).toLocaleDateString('en-US', { month: 'short' }),
+            thisYear: new Set(thisYear.map(d => d.commonName || d.common_name || d.scientificName)).size,
+            lastYear: new Set(lastYear.map(d => d.commonName || d.common_name || d.scientificName)).size,
+            thisYearDetections: thisYear.length,
+            lastYearDetections: lastYear.length
+        });
+    }
+
+    // New species this year
+    const newSpeciesThisYear = [...thisYearSpecies].filter(s => !lastYearSpecies.has(s));
+
+    // Missing species from last year
+    const missingSpecies = [...lastYearSpecies].filter(s => !thisYearSpecies.has(s));
+
+    const speciesChange = thisYearSpecies.size - lastYearSpecies.size;
+    const detectionChange = thisYearDetections.length - lastYearDetections.length;
+
+    return {
+        thisYear: {
+            species: thisYearSpecies.size,
+            detections: thisYearDetections.length
+        },
+        lastYear: {
+            species: lastYearSpecies.size,
+            detections: lastYearDetections.length
+        },
+        changes: {
+            species: speciesChange,
+            speciesPercent: lastYearSpecies.size > 0 ? ((speciesChange / lastYearSpecies.size) * 100).toFixed(1) : 0,
+            detections: detectionChange,
+            detectionsPercent: lastYearDetections.length > 0 ? ((detectionChange / lastYearDetections.length) * 100).toFixed(1) : 0
+        },
+        monthlyComparison: monthlyComparison,
+        newSpecies: newSpeciesThisYear,
+        missingSpecies: missingSpecies
+    };
+}
+
+/**
+ * Calculate species streaks
+ * Tracks consecutive days each species has appeared
+ */
+export function calculateSpeciesStreaks(detections, speciesData) {
+    const streaks = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    speciesData.forEach(species => {
+        const speciesName = species.commonName || species.common_name || species.scientificName;
+
+        // Get all detection dates for this species
+        const detectionDates = detections
+            .filter(d => (d.commonName || d.common_name || d.scientificName) === speciesName)
+            .map(d => {
+                const date = parseDetectionDate(d);
+                date.setHours(0, 0, 0, 0);
+                return date.getTime();
+            })
+            .filter((value, index, self) => self.indexOf(value) === index) // unique dates
+            .sort((a, b) => b - a); // newest first
+
+        if (detectionDates.length === 0) return;
+
+        // Calculate current streak (consecutive days from today backwards)
+        let currentStreak = 0;
+        let checkDate = today.getTime();
+
+        for (let i = 0; i < detectionDates.length; i++) {
+            if (detectionDates[i] === checkDate) {
+                currentStreak++;
+                checkDate -= 24 * 60 * 60 * 1000; // go back one day
+            } else if (detectionDates[i] < checkDate) {
+                break;
+            }
+        }
+
+        // Calculate best streak ever
+        let bestStreak = 0;
+        let tempStreak = 1;
+        for (let i = 0; i < detectionDates.length - 1; i++) {
+            const daysDiff = (detectionDates[i] - detectionDates[i + 1]) / (24 * 60 * 60 * 1000);
+            if (daysDiff === 1) {
+                tempStreak++;
+            } else {
+                bestStreak = Math.max(bestStreak, tempStreak);
+                tempStreak = 1;
+            }
+        }
+        bestStreak = Math.max(bestStreak, tempStreak);
+
+        if (currentStreak > 0 || bestStreak > 1) {
+            streaks.push({
+                species: speciesName,
+                currentStreak: currentStreak,
+                bestStreak: bestStreak,
+                isActive: currentStreak > 0,
+                lastSeen: new Date(detectionDates[0])
+            });
+        }
+    });
+
+    return streaks.sort((a, b) => {
+        if (a.currentStreak !== b.currentStreak) {
+            return b.currentStreak - a.currentStreak;
+        }
+        return b.bestStreak - a.bestStreak;
+    });
+}
+
+/**
+ * Calculate rarity scores for species
+ * Based on detection frequency and historical patterns
+ */
+export function calculateRarityScores(speciesData, detections) {
+    if (!speciesData || speciesData.length === 0) return [];
+
+    const totalDetections = detections.length;
+    const avgDetectionsPerSpecies = totalDetections / speciesData.length;
+
+    return speciesData.map(species => {
+        const speciesName = species.commonName || species.common_name || species.scientificName;
+        const count = species.detections || species.count || 0;
+
+        // Rarity based on frequency (less common = more rare)
+        const frequencyScore = Math.max(0, 100 - ((count / avgDetectionsPerSpecies) * 50));
+
+        // Rarity based on how long since first seen
+        const firstSeen = species.firstSeen || new Date(species.first_seen);
+        const daysSinceFirst = (Date.now() - firstSeen.getTime()) / (24 * 60 * 60 * 1000);
+        const recencyScore = daysSinceFirst > 0 ? Math.min(50, (30 / daysSinceFirst) * 50) : 0;
+
+        const rarityScore = Math.round(frequencyScore + recencyScore);
+
+        let rarityLevel;
+        if (rarityScore >= 80) rarityLevel = 'Extremely Rare';
+        else if (rarityScore >= 60) rarityLevel = 'Very Rare';
+        else if (rarityScore >= 40) rarityLevel = 'Rare';
+        else if (rarityScore >= 20) rarityLevel = 'Uncommon';
+        else rarityLevel = 'Common';
+
+        return {
+            species: speciesName,
+            rarityScore: rarityScore,
+            rarityLevel: rarityLevel,
+            detections: count,
+            firstSeen: firstSeen
+        };
+    }).sort((a, b) => b.rarityScore - a.rarityScore);
+}
+
+/**
+ * Detect activity anomalies
+ * Find unusual patterns in bird activity
+ */
+export function detectActivityAnomalies(detections, speciesData) {
+    const anomalies = [];
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const weekAgoStart = new Date(todayStart);
+    weekAgoStart.setDate(weekAgoStart.getDate() - 7);
+
+    // Today's detections
+    const todayDetections = detections.filter(d => parseDetectionDate(d) >= todayStart);
+    const todaySpecies = new Map();
+    todayDetections.forEach(d => {
+        const name = d.commonName || d.common_name || d.scientificName;
+        todaySpecies.set(name, (todaySpecies.get(name) || 0) + 1);
+    });
+
+    // Historical average (last 30 days, excluding today)
+    const thirtyDaysAgo = new Date(todayStart);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const historicalDetections = detections.filter(d => {
+        const date = parseDetectionDate(d);
+        return date >= thirtyDaysAgo && date < todayStart;
+    });
+
+    // Calculate daily averages for each species
+    const speciesAverages = new Map();
+    speciesData.forEach(species => {
+        const speciesName = species.commonName || species.common_name || species.scientificName;
+        const speciesDetections = historicalDetections.filter(d =>
+            (d.commonName || d.common_name || d.scientificName) === speciesName
+        );
+        const dailyAvg = speciesDetections.length / 30;
+        speciesAverages.set(speciesName, dailyAvg);
+    });
+
+    // Find anomalies - species much more or less active than usual
+    todaySpecies.forEach((count, speciesName) => {
+        const avg = speciesAverages.get(speciesName) || 0;
+        if (avg === 0) return; // Skip if no historical data
+
+        const percentDiff = ((count - avg) / avg) * 100;
+
+        if (percentDiff >= 200) {
+            anomalies.push({
+                type: 'spike',
+                species: speciesName,
+                message: `${speciesName} appeared ${count} times today (${percentDiff.toFixed(0)}% more than usual)`,
+                count: count,
+                average: avg.toFixed(1),
+                percentDiff: percentDiff.toFixed(0),
+                icon: '📈'
+            });
+        } else if (percentDiff <= -50 && count > 0) {
+            anomalies.push({
+                type: 'drop',
+                species: speciesName,
+                message: `${speciesName} appeared only ${count} times today (${Math.abs(percentDiff).toFixed(0)}% less than usual)`,
+                count: count,
+                average: avg.toFixed(1),
+                percentDiff: percentDiff.toFixed(0),
+                icon: '📉'
+            });
+        }
+    });
+
+    // Find missing species (usually active but not seen today)
+    speciesAverages.forEach((avg, speciesName) => {
+        if (avg >= 1 && !todaySpecies.has(speciesName)) {
+            anomalies.push({
+                type: 'missing',
+                species: speciesName,
+                message: `${speciesName} not seen today (usually appears ${avg.toFixed(1)} times/day)`,
+                count: 0,
+                average: avg.toFixed(1),
+                icon: '❓'
+            });
+        }
+    });
+
+    // New species today
+    todaySpecies.forEach((count, speciesName) => {
+        const avg = speciesAverages.get(speciesName) || 0;
+        if (avg === 0) {
+            anomalies.push({
+                type: 'new',
+                species: speciesName,
+                message: `${speciesName} detected for the first time in 30 days!`,
+                count: count,
+                icon: '🆕'
+            });
+        }
+    });
+
+    return anomalies;
+}
+
+/**
+ * Get missing species alerts
+ * Species that haven't been seen in a while but usually appear regularly
+ */
+export function getMissingSpeciesAlerts(speciesData, detections) {
+    const alerts = [];
+    const now = new Date();
+
+    speciesData.forEach(species => {
+        const speciesName = species.commonName || species.common_name || species.scientificName;
+        const lastSeen = species.lastSeen ? new Date(species.lastSeen) : new Date(species.last_seen);
+        const daysSinceLastSeen = (now - lastSeen) / (24 * 60 * 60 * 1000);
+
+        // Get all detections for this species
+        const speciesDetections = detections
+            .filter(d => (d.commonName || d.common_name || d.scientificName) === speciesName)
+            .map(d => parseDetectionDate(d))
+            .sort((a, b) => b - a);
+
+        if (speciesDetections.length < 3) return; // Need at least 3 detections
+
+        // Calculate average days between detections
+        let totalDaysBetween = 0;
+        for (let i = 0; i < speciesDetections.length - 1; i++) {
+            const daysBetween = (speciesDetections[i] - speciesDetections[i + 1]) / (24 * 60 * 60 * 1000);
+            totalDaysBetween += daysBetween;
+        }
+        const avgDaysBetween = totalDaysBetween / (speciesDetections.length - 1);
+
+        // Alert if current absence is more than 2x the average interval
+        if (daysSinceLastSeen > avgDaysBetween * 2 && avgDaysBetween < 7) {
+            const daysOverdue = daysSinceLastSeen - avgDaysBetween;
+            alerts.push({
+                species: speciesName,
+                daysSinceLastSeen: Math.round(daysSinceLastSeen),
+                avgDaysBetween: avgDaysBetween.toFixed(1),
+                daysOverdue: Math.round(daysOverdue),
+                urgency: daysOverdue > avgDaysBetween * 2 ? 'high' : 'medium',
+                message: `${speciesName} usually appears every ${avgDaysBetween.toFixed(1)} days, but it's been ${Math.round(daysSinceLastSeen)} days`
+            });
+        }
+    });
+
+    return alerts.sort((a, b) => b.daysOverdue - a.daysOverdue);
+}
+
+/**
+ * Predict best times to watch for birds
+ * Based on historical peak activity
+ */
+export function predictBestWatchTimes(detections) {
+    // Get hourly activity for each day of week
+    const dayHourActivity = {};
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    detections.forEach(d => {
+        const date = parseDetectionDate(d);
+        const dayOfWeek = date.getDay();
+        const hour = date.getHours();
+        const key = `${dayOfWeek}-${hour}`;
+        dayHourActivity[key] = (dayHourActivity[key] || 0) + 1;
+    });
+
+    // Find best times for each day
+    const recommendations = daysOfWeek.map((dayName, dayIndex) => {
+        const hoursData = [];
+        for (let hour = 0; hour < 24; hour++) {
+            const key = `${dayIndex}-${hour}`;
+            hoursData.push({
+                hour: hour,
+                activity: dayHourActivity[key] || 0
+            });
+        }
+
+        // Sort by activity
+        hoursData.sort((a, b) => b.activity - a.activity);
+        const topHours = hoursData.slice(0, 3);
+
+        return {
+            day: dayName,
+            bestTimes: topHours.map(h => ({
+                time: `${h.hour}:00 - ${h.hour + 1}:00`,
+                hour: h.hour,
+                activity: h.activity,
+                label: h.hour < 12 ? 'Morning' : h.hour < 17 ? 'Afternoon' : 'Evening'
+            })),
+            peakActivity: topHours[0].activity
+        };
+    });
+
+    // Get today's recommendation
+    const today = new Date().getDay();
+    const todayRecommendation = recommendations[today];
+
+    return {
+        today: todayRecommendation,
+        weekly: recommendations
+    };
+}

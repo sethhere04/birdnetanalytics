@@ -3432,3 +3432,662 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+
+/* Year-over-Year Styles */
+.yoy-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.yoy-card {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 2px solid var(--border);
+}
+
+.yoy-card.positive {
+    border-color: var(--success);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.yoy-card.negative {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.yoy-label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.yoy-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+}
+
+.yoy-card.positive .yoy-value {
+    color: var(--success);
+}
+
+.yoy-card.negative .yoy-value {
+    color: var(--danger);
+}
+
+.yoy-subtext {
+    font-size: 1rem;
+    color: var(--text-light);
+}
+
+.yoy-meta {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-top: 0.5rem;
+}
+
+.yoy-highlights {
+    margin-bottom: 1.5rem;
+}
+
+.yoy-highlights h4 {
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.species-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.species-chip {
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.species-chip.missing {
+    background: var(--text-light);
+}
+
+.species-chip-more {
+    padding: 0.5rem 1rem;
+    background: var(--bg-secondary);
+    color: var(--text-light);
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+/* Species Streaks Styles */
+.streaks-section {
+    margin-bottom: 2rem;
+}
+
+.streaks-section h4 {
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.streaks-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.streak-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 2px solid var(--border);
+}
+
+.streak-card.active {
+    border-color: var(--primary);
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.streak-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.streak-info {
+    flex: 1;
+}
+
+.streak-info strong {
+    display: block;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.streak-dates {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.streak-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.streak-stat {
+    flex: 1;
+    background: var(--bg-card);
+    padding: 1rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.streak-icon {
+    font-size: 1.5rem;
+}
+
+.streak-numbers {
+    flex: 1;
+}
+
+.streak-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.streak-label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+}
+
+/* Rarity Scores Styles */
+.rarity-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.rarity-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.rarity-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rarity-card.extremely-rare {
+    border-left-color: #8b5cf6;
+}
+
+.rarity-card.very-rare {
+    border-left-color: #ec4899;
+}
+
+.rarity-card.rare {
+    border-left-color: #f59e0b;
+}
+
+.rarity-card.uncommon {
+    border-left-color: #3b82f6;
+}
+
+.rarity-card.common {
+    border-left-color: var(--text-light);
+}
+
+.rarity-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.rarity-info {
+    flex: 1;
+}
+
+.rarity-info strong {
+    display: block;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.rarity-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.rarity-badge.extremely-rare {
+    background: #8b5cf6;
+    color: white;
+}
+
+.rarity-badge.very-rare {
+    background: #ec4899;
+    color: white;
+}
+
+.rarity-badge.rare {
+    background: #f59e0b;
+    color: white;
+}
+
+.rarity-badge.uncommon {
+    background: #3b82f6;
+    color: white;
+}
+
+.rarity-badge.common {
+    background: var(--text-light);
+    color: white;
+}
+
+.rarity-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.rarity-score {
+    flex: 1;
+}
+
+.score-bar {
+    height: 8px;
+    background: var(--bg-card);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.score-fill {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.3s;
+}
+
+.score-fill.extremely-rare {
+    background: #8b5cf6;
+}
+
+.score-fill.very-rare {
+    background: #ec4899;
+}
+
+.score-fill.rare {
+    background: #f59e0b;
+}
+
+.score-fill.uncommon {
+    background: #3b82f6;
+}
+
+.score-fill.common {
+    background: var(--text-light);
+}
+
+.score-value {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.rarity-meta {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+/* Activity Anomalies Styles */
+.anomalies-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.anomalies-header h4 {
+    margin: 0;
+    color: var(--text);
+}
+
+.anomalies-count {
+    padding: 0.25rem 0.75rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.anomalies-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.anomaly-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border-left: 4px solid var(--border);
+}
+
+.anomaly-card.spike {
+    border-left-color: var(--success);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.anomaly-card.drop {
+    border-left-color: var(--warning);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.anomaly-card.missing {
+    border-left-color: var(--danger);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.anomaly-card.new {
+    border-left-color: var(--primary);
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.anomaly-icon {
+    font-size: 1.5rem;
+}
+
+.anomaly-content {
+    flex: 1;
+}
+
+.anomaly-message {
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.anomaly-details {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+/* Best Watch Times Styles */
+.watch-times-today {
+    margin-bottom: 2rem;
+}
+
+.watch-times-today h4 {
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.best-times-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.best-time-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 2px solid var(--border);
+}
+
+.best-time-card.rank-1 {
+    border-color: #fbbf24;
+    background: rgba(251, 191, 36, 0.05);
+}
+
+.time-rank {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    min-width: 3rem;
+    text-align: center;
+}
+
+.time-info {
+    flex: 1;
+}
+
+.time-label {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.time-range {
+    font-size: 0.875rem;
+    color: var(--text-light);
+}
+
+.time-activity {
+    text-align: center;
+}
+
+.activity-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.activity-label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.watch-times-weekly h4 {
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.weekly-times-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.weekly-day {
+    background: var(--bg-secondary);
+    padding: 1rem 0.5rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 2px solid var(--border);
+}
+
+.weekly-day.today {
+    border-color: var(--primary);
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.day-name {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.day-best-time {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+}
+
+.day-activity {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* Missing Species Alerts Styles */
+.missing-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.missing-header-section h4 {
+    margin: 0;
+    color: var(--text);
+}
+
+.missing-count {
+    padding: 0.25rem 0.75rem;
+    background: var(--danger);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.missing-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.missing-species-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.missing-species-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.missing-species-card.high {
+    border-left-color: var(--danger);
+}
+
+.missing-species-card.medium {
+    border-left-color: var(--warning);
+}
+
+.missing-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.missing-info {
+    flex: 1;
+}
+
+.missing-info strong {
+    display: block;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.urgency-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.urgency-badge.high {
+    background: var(--danger);
+    color: white;
+}
+
+.urgency-badge.medium {
+    background: var(--warning);
+    color: white;
+}
+
+.missing-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.missing-stat {
+    background: var(--bg-card);
+    padding: 0.75rem;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.missing-stat .stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+}
+
+.missing-stat .stat-value {
+    display: block;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.missing-message {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+/* Mobile responsiveness for new components */
+@media (max-width: 768px) {
+    .yoy-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .weekly-times-grid {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.25rem;
+    }
+
+    .weekly-day {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .day-name {
+        font-size: 0.75rem;
+    }
+
+    .day-best-time, .day-activity {
+        font-size: 0.6rem;
+    }
+
+    .missing-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .streak-stats {
+        flex-direction: column;
+    }
+}
