@@ -521,12 +521,13 @@
                 <div class="setting-section">
                     <h3>Appearance</h3>
                     <div class="setting-item">
-                        <label class="toggle-label">
-                            <input type="checkbox" id="theme-toggle-setting" class="toggle-checkbox">
-                            <span class="toggle-switch"></span>
-                            <span id="theme-label-text">Dark Mode</span>
-                        </label>
-                        <p class="setting-description">Toggle between light and dark theme</p>
+                        <label for="theme-select">Theme</label>
+                        <select id="theme-select" class="setting-select">
+                            <option value="auto">Auto (follow system)</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                        <p class="setting-description">Choose theme or automatically match your device settings</p>
                     </div>
                 </div>
 

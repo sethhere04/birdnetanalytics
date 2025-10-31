@@ -72,8 +72,18 @@ function setupEventListeners() {
     }
 
     // Load saved theme preference on startup
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
+    const savedPreference = localStorage.getItem('theme-preference') || 'auto';
+    applyThemePreference(savedPreference);
+
+    // Listen for system theme changes
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            const preference = localStorage.getItem('theme-preference') || 'auto';
+            if (preference === 'auto') {
+                applyThemePreference('auto');
+            }
+        });
+    }
 
     // Modal close (clicking outside)
     const modal = document.getElementById('species-modal');
@@ -113,11 +123,11 @@ function setupEventListeners() {
     if (settingsToggle && settingsModal) {
         // Open settings modal
         settingsToggle.addEventListener('click', () => {
-            // Load current theme setting
-            const currentTheme = localStorage.getItem('theme') || 'light';
-            const themeToggleSetting = document.getElementById('theme-toggle-setting');
-            if (themeToggleSetting) {
-                themeToggleSetting.checked = (currentTheme === 'dark');
+            // Load current theme preference
+            const currentPreference = localStorage.getItem('theme-preference') || 'auto';
+            const themeSelect = document.getElementById('theme-select');
+            if (themeSelect) {
+                themeSelect.value = currentPreference;
             }
 
             // Load current data loading setting
@@ -138,12 +148,13 @@ function setupEventListeners() {
             settingsModal.style.display = 'flex';
         });
 
-        // Theme toggle handler
-        const themeToggleSetting = document.getElementById('theme-toggle-setting');
-        if (themeToggleSetting) {
-            themeToggleSetting.addEventListener('change', (e) => {
-                const newTheme = e.target.checked ? 'dark' : 'light';
-                setTheme(newTheme);
+        // Theme select handler
+        const themeSelect = document.getElementById('theme-select');
+        if (themeSelect) {
+            themeSelect.addEventListener('change', (e) => {
+                const preference = e.target.value;
+                localStorage.setItem('theme-preference', preference);
+                applyThemePreference(preference);
             });
         }
 
@@ -609,6 +620,32 @@ export function applyFilters(filters) {
 
     // Update UI
     updateUI();
+}
+
+/**
+ * Get system color scheme preference
+ */
+function getSystemTheme() {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+    }
+    return 'light';
+}
+
+/**
+ * Apply theme preference (auto, light, or dark)
+ */
+function applyThemePreference(preference) {
+    let themeToApply;
+
+    if (preference === 'auto') {
+        themeToApply = getSystemTheme();
+        console.log(`🎨 Auto theme: using system preference (${themeToApply})`);
+    } else {
+        themeToApply = preference;
+    }
+
+    setTheme(themeToApply);
 }
 
 /**
