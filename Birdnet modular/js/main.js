@@ -579,6 +579,13 @@ function updateUI() {
 function renderCurrentTab() {
     const { analytics, species, detections } = AppState.data;
 
+    console.log('📑 renderCurrentTab called:', {
+        currentTab: AppState.currentTab,
+        hasAnalytics: !!analytics,
+        speciesCount: species?.length || 0,
+        detectionsCount: detections?.length || 0
+    });
+
     if (!analytics) return;
 
     switch (AppState.currentTab) {
@@ -598,6 +605,7 @@ function renderCurrentTab() {
             UIRender.renderFeeding(species);
             break;
         case 'insights':
+            console.log('🎯 Calling renderInsights with:', { analytics, speciesCount: species.length, detectionsCount: detections.length });
             UIRender.renderInsights(analytics, species, detections);
             break;
     }

@@ -529,6 +529,12 @@ export function renderMigration(speciesData) {
  * Render insights tab
  */
 export async function renderInsights(analytics, speciesData, detections) {
+    console.log('💡 renderInsights CALLED:', {
+        analyticsExists: !!analytics,
+        speciesCount: speciesData?.length || 0,
+        detectionsCount: detections?.length || 0
+    });
+
     // NEW: Activity anomalies (today's alerts)
     renderActivityAnomalies(detections, speciesData);
 
