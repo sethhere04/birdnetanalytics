@@ -191,10 +191,13 @@
                     <div class="card">
                         <div class="card-header">
                             <div>
-                                <div class="card-title">🦜 All Detected Species</div>
+                                <div class="card-title">
+                                    🦜 All Detected Species
+                                    <button class="collapse-toggle" onclick="toggleGalleryCollapse()" id="gallery-collapse-btn" aria-label="Toggle gallery">▼</button>
+                                </div>
                                 <div class="card-subtitle">Browse, sort, and filter all detected species</div>
                             </div>
-                            <div class="gallery-controls">
+                            <div class="gallery-controls" id="gallery-controls">
                                 <select id="gallery-sort" class="filter-select">
                                     <option value="detections">Most Detections</option>
                                     <option value="confidence">Highest Confidence</option>

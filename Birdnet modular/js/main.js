@@ -220,6 +220,29 @@ function setupEventListeners() {
         const comparison = Analytics.compareSpecies(selectedSpecies, AppState.data.detections, AppState.data.species);
         UIRender.renderSpeciesComparison(comparison);
     };
+
+    // Gallery collapse toggle
+    window.toggleGalleryCollapse = () => {
+        const gallery = document.getElementById('photo-gallery');
+        const controls = document.getElementById('gallery-controls');
+        const btn = document.getElementById('gallery-collapse-btn');
+
+        if (!gallery || !btn) return;
+
+        const isCollapsed = gallery.classList.contains('collapsed');
+
+        if (isCollapsed) {
+            gallery.classList.remove('collapsed');
+            if (controls) controls.classList.remove('collapsed');
+            btn.textContent = '▼';
+            btn.setAttribute('aria-expanded', 'true');
+        } else {
+            gallery.classList.add('collapsed');
+            if (controls) controls.classList.add('collapsed');
+            btn.textContent = '▶';
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    };
 }
 
 /**
