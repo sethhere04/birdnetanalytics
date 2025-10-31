@@ -561,12 +561,37 @@ export function renderMigration(speciesData) {
 /**
  * Render insights tab
  */
-export function renderInsights(analytics, speciesData, detections) {
+export async function renderInsights(analytics, speciesData, detections) {
     // Render diversity trends chart (default to daily view)
     renderDiversityTrends(detections, 'daily');
 
     // Render co-occurrence analysis
     renderCoOccurrence(detections);
+
+    // Weather correlation (async)
+    const weatherModule = await import('./weather.js');
+    const weatherCorrelation = weatherModule.correlateWeatherWithActivity(detections);
+    renderWeatherImpact(weatherCorrelation);
+
+    // Enhanced predictions with weather
+    try {
+        const currentWeather = await weatherModule.getCurrentWeather();
+        const forecast = await weatherModule.getWeatherForecast();
+        const analyticsModule = window.analyticsModule;
+        const predictions = analyticsModule.predictActivityWithWeather(detections, {
+            current: currentWeather,
+            forecast: forecast
+        });
+        renderEnhancedPredictions(predictions);
+    } catch (error) {
+        console.log('Weather forecast unavailable, showing basic predictions');
+        const analyticsModule = window.analyticsModule;
+        const predictions = analyticsModule.predictPeakActivity(detections, 7);
+        renderEnhancedPredictions(predictions);
+    }
+
+    // Species comparison (show empty state initially)
+    renderSpeciesComparison(null);
 
     // Render AI-powered insights
     const container = document.getElementById('insights-list');
@@ -1150,4 +1175,140 @@ export function renderNextDetectionPredictions(speciesData, detections) {
 
     html += '</div>';
     container.innerHTML = html;
+}
+
+/**
+ * Render weather impact widget
+ */
+export function renderWeatherImpact(weatherCorrelation) {
+    const container = document.getElementById('weather-impact-widget');
+    if (!container) return;
+
+    if (!weatherCorrelation || !weatherCorrelation.hasData || !weatherCorrelation.current) {
+        container.innerHTML = '<div class="weather-widget"><div class="weather-header"><h3>🌤️ Weather Impact</h3><button class="btn-link" onclick="window.showWeatherSetup()">⚙️ Setup</button></div><div class="weather-empty"><p>Weather integration not configured</p><button class="btn-primary" onclick="window.showWeatherSetup()">Configure Weather</button></div></div>';
+        return;
+    }
+
+    const analysis = weatherCorrelation.current;
+    const activityClass = getActivityClass(analysis.activityScore);
+
+    const factorsHTML = analysis.factors.length > 0 ? '<div class="weather-factors"><div class="factors-title">Impact Factors:</div>' + analysis.factors.map(f => '<div class="factor-item"><span class="factor-impact ' + (f.impact.startsWith('+') ? 'positive' : 'negative') + '">' + f.impact + '</span><span class="factor-name">' + f.factor + '</span><span class="factor-reason">' + f.reason + '</span></div>').join('') + '</div>' : '';
+
+    const recsHTML = weatherCorrelation.recommendations.length > 0 ? '<div class="weather-recommendations">' + weatherCorrelation.recommendations.map(rec => '<div class="recommendation-item ' + rec.type + '"><span class="rec-icon">' + rec.icon + '</span><span class="rec-message">' + rec.message + '</span></div>').join('') + '</div>' : '';
+
+    const rainHTML = analysis.rain > 0 ? '<div class="weather-detail-item"><span class="icon">🌧️</span><span>' + analysis.rain.toFixed(2) + '"</span></div>' : '';
+
+    container.innerHTML = '<div class="weather-widget"><div class="weather-header"><h3>🌤️ Current Weather Impact</h3><button class="btn-link" onclick="window.showWeatherSetup()">⚙️</button></div><div class="weather-current"><div class="weather-main"><div class="weather-temp">' + Math.round(analysis.temperature) + '°F</div><div class="weather-condition">' + analysis.condition + '</div></div><div class="weather-details"><div class="weather-detail-item"><span class="icon">💨</span><span>' + Math.round(analysis.windSpeed) + ' mph</span></div><div class="weather-detail-item"><span class="icon">💧</span><span>' + analysis.humidity + '%</span></div>' + rainHTML + '</div></div><div class="weather-activity"><div class="activity-score ' + activityClass + '"><div class="activity-label">Bird Activity</div><div class="activity-value">' + analysis.activityLevel + '</div><div class="activity-score-num">' + analysis.activityScore + '/10</div></div><div class="activity-recent"><div class="recent-label">Last 2 hours</div><div class="recent-value">' + analysis.recentDetections + ' detections</div><div class="recent-rate">' + analysis.avgPerHour + '/hour</div></div></div>' + factorsHTML + recsHTML + '</div>';
+}
+
+/**
+ * Render species comparison tool
+ */
+export function renderSpeciesComparison(comparison) {
+    const container = document.getElementById('species-comparison-container');
+    if (!container) return;
+
+    if (!comparison || !comparison.species || comparison.species.length < 2) {
+        container.innerHTML = '<div class="comparison-empty"><p>Select 2-4 species to compare</p><button class="btn-primary" onclick="window.showSpeciesSelector()">Select Species</button></div>';
+        return;
+    }
+
+    const summaryHTML = comparison.summary.map(s => '<div class="summary-item">• ' + s + '</div>').join('');
+
+    const speciesCardsHTML = comparison.species.map(species => {
+        const hasData = species.count > 0;
+        const statsHTML = hasData ? '<div class="species-card-stats"><div class="stat-item"><div class="stat-label">Avg Confidence</div><div class="stat-value">' + (species.avgConfidence * 100).toFixed(1) + '%</div></div><div class="stat-item"><div class="stat-label">First Seen</div><div class="stat-value">' + species.firstSeen.toLocaleDateString() + '</div></div></div><div class="species-peak-times"><div class="peak-label">Peak Activity Times:</div>' + species.peakHours.map((peak, i) => '<div class="peak-time-item"><span class="peak-rank">#' + (i + 1) + '</span><span class="peak-time">' + peak.label + '</span><span class="peak-count">' + peak.count + ' detections</span></div>').join('') + '</div>' : '<div class="no-data">No detections found</div>';
+
+        return '<div class="comparison-species-card"><div class="species-card-header"><h4>' + species.name + '</h4><div class="species-card-count">' + species.count + ' detections</div></div>' + statsHTML + '</div>';
+    }).join('');
+
+    const overlapsHTML = comparison.overlaps.length > 0 ? '<div class="comparison-overlaps"><h4>Activity Overlap</h4><div class="overlaps-grid">' + comparison.overlaps.map(overlap => '<div class="overlap-item"><div class="overlap-species">' + overlap.species1 + ' & ' + overlap.species2 + '</div><div class="overlap-bar"><div class="overlap-fill" style="width: ' + overlap.overlapPercentage + '%"></div></div><div class="overlap-percentage">' + overlap.overlapPercentage + '%</div><div class="overlap-detail">' + overlap.overlapHours + '/' + overlap.totalHours + ' hours overlap</div></div>').join('') + '</div></div>' : '';
+
+    container.innerHTML = '<div class="species-comparison"><div class="comparison-header"><h3>🆚 Species Comparison</h3><button class="btn-link" onclick="window.showSpeciesSelector()">Change Selection</button></div><div class="comparison-summary">' + summaryHTML + '</div><div class="comparison-grid">' + speciesCardsHTML + '</div>' + overlapsHTML + '<div class="comparison-chart"><canvas id="comparison-hourly-chart"></canvas></div></div>';
+
+    renderComparisonChart(comparison.species);
+}
+
+/**
+ * Render comparison hourly activity chart
+ */
+function renderComparisonChart(species) {
+    const canvas = document.getElementById('comparison-hourly-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (window.comparisonChart) {
+        window.comparisonChart.destroy();
+    }
+
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const colors = ['#667eea', '#f56565', '#48bb78', '#ed8936'];
+    const datasets = species.map((s, index) => {
+        const color = colors[index % colors.length];
+        return {
+            label: s.name,
+            data: s.hourlyPattern,
+            borderColor: color,
+            backgroundColor: color + '33',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: false
+        };
+    });
+
+    window.comparisonChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: hours.map(h => h + ':00'), datasets: datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                title: { display: true, text: 'Hourly Activity Comparison', font: { size: 16 } },
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Detections' } },
+                x: { title: { display: true, text: 'Hour of Day' } }
+            }
+        }
+    });
+}
+
+/**
+ * Render enhanced predictions with weather
+ */
+export function renderEnhancedPredictions(predictions) {
+    const container = document.getElementById('enhanced-predictions-container');
+    if (!container) return;
+
+    if (!predictions || predictions.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No predictions available</p></div>';
+        return;
+    }
+
+    const cardsHTML = predictions.slice(0, 7).map(pred => {
+        const confidenceClass = pred.confidence >= 70 ? 'high' : pred.confidence >= 40 ? 'medium' : 'low';
+        const hasWeather = pred.weather && pred.weather.temp;
+
+        const weatherHTML = hasWeather ? '<div class="prediction-weather"><div class="weather-temp">' + Math.round(pred.weather.temp) + '°F</div><div class="weather-desc">' + pred.weather.description + '</div></div>' : '';
+
+        const factorsHTML = pred.weatherFactors && pred.weatherFactors.length > 0 ? '<div class="prediction-factors">' + pred.weatherFactors.map(factor => '<div class="factor-tag">' + factor + '</div>').join('') + '</div>' : '';
+
+        const adjustmentHTML = pred.weatherAdjustment ? '<div class="weather-adjustment ' + (pred.weatherAdjustment > 0 ? 'positive' : 'negative') + '">' + (pred.weatherAdjustment > 0 ? '+' : '') + pred.weatherAdjustment + '% weather impact</div>' : '';
+
+        return '<div class="enhanced-prediction-card"><div class="prediction-date"><div class="date-day">' + pred.date.toLocaleDateString('en-US', { weekday: 'short' }) + '</div><div class="date-date">' + pred.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</div></div>' + weatherHTML + '<div class="prediction-activity"><div class="activity-label">Expected Activity</div><div class="activity-confidence ' + confidenceClass + '"><div class="confidence-bar"><div class="confidence-fill" style="width: ' + pred.confidence + '%"></div></div><div class="confidence-value">' + pred.confidence + '%</div></div></div><div class="prediction-times"><div class="times-label">Peak Times:</div>' + pred.peakTimes.slice(0, 2).map(time => '<div class="time-item">' + time.label + '</div>').join('') + '</div>' + factorsHTML + adjustmentHTML + '</div>';
+    }).join('');
+
+    container.innerHTML = '<div class="enhanced-predictions-grid">' + cardsHTML + '</div>';
+}
+
+/**
+ * Get activity class based on score
+ */
+function getActivityClass(score) {
+    if (score >= 8) return 'excellent';
+    if (score >= 6) return 'good';
+    if (score >= 4) return 'moderate';
+    if (score >= 2) return 'low';
+    return 'very-low';
 }

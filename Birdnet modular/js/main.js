@@ -176,6 +176,50 @@ function setupEventListeners() {
 
     // Export analytics module to window so new rendering functions can access it
     window.analyticsModule = Analytics;
+
+    // Weather setup handler
+    window.showWeatherSetup = async () => {
+        const { isWeatherConfigured, getWeatherConfig, setWeatherConfig } = await import('./weather.js');
+
+        const config = getWeatherConfig();
+        const apiKey = prompt('Enter your OpenWeatherMap API key:\n(Get free key at: https://openweathermap.org/api)', config.apiKey || '');
+
+        if (!apiKey) return;
+
+        const lat = prompt('Enter your latitude:', config.location?.lat || '');
+        const lon = prompt('Enter your longitude:', config.location?.lon || '');
+
+        if (lat && lon) {
+            setWeatherConfig(apiKey, { lat: parseFloat(lat), lon: parseFloat(lon) });
+            alert('Weather configuration saved! Refreshing data...');
+            loadData();
+        }
+    };
+
+    // Species selector handler
+    window.showSpeciesSelector = () => {
+        const species = AppState.data.analytics?.topSpecies || [];
+        if (species.length === 0) {
+            alert('No species data available yet. Please wait for data to load.');
+            return;
+        }
+
+        const options = species.slice(0, 20).map((s, i) => `${i + 1}. ${s.name}`).join('\n');
+        const selection = prompt(`Select 2-4 species to compare (enter numbers separated by commas):\n\n${options}`, '1,2');
+
+        if (!selection) return;
+
+        const indices = selection.split(',').map(s => parseInt(s.trim()) - 1).filter(i => i >= 0 && i < species.length);
+
+        if (indices.length < 2 || indices.length > 4) {
+            alert('Please select between 2 and 4 species.');
+            return;
+        }
+
+        const selectedSpecies = indices.map(i => species[i].name);
+        const comparison = Analytics.compareSpecies(selectedSpecies, AppState.data.detections, AppState.data.species);
+        UIRender.renderSpeciesComparison(comparison);
+    };
 }
 
 /**

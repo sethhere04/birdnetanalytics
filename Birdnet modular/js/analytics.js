@@ -816,3 +816,225 @@ function getEmptyAnalytics() {
         insights: []
     };
 }
+
+/**
+ * Compare multiple species (2-4 species)
+ * Returns comparison data including activity overlap, peak times, etc.
+ */
+export function compareSpecies(speciesNames, detections, speciesData) {
+    if (!speciesNames || speciesNames.length < 2) {
+        return null;
+    }
+
+    const comparisons = [];
+
+    speciesNames.forEach(speciesName => {
+        // Get detections for this species
+        const speciesDetections = detections.filter(d => {
+            const name = d.commonName || d.common_name || d.species || d.scientificName;
+            return name === speciesName;
+        });
+
+        if (speciesDetections.length === 0) {
+            comparisons.push({
+                name: speciesName,
+                count: 0,
+                hourlyPattern: new Array(24).fill(0),
+                peakHours: [],
+                avgConfidence: 0,
+                firstSeen: null,
+                lastSeen: null
+            });
+            return;
+        }
+
+        // Analyze hourly pattern
+        const hourlyPattern = new Array(24).fill(0);
+        speciesDetections.forEach(d => {
+            const date = parseDetectionDate(d);
+            const hour = date.getHours();
+            hourlyPattern[hour]++;
+        });
+
+        // Find peak hours (top 3)
+        const hourData = hourlyPattern.map((count, hour) => ({ hour, count }));
+        const peakHours = hourData
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 3)
+            .filter(h => h.count > 0)
+            .map(h => ({
+                hour: h.hour,
+                count: h.count,
+                label: formatHour(h.hour)
+            }));
+
+        // Get timestamps
+        const timestamps = speciesDetections.map(d => parseDetectionDate(d).getTime());
+        const firstSeen = new Date(Math.min(...timestamps));
+        const lastSeen = new Date(Math.max(...timestamps));
+
+        // Calculate average confidence
+        const confidences = speciesDetections.map(d => d.confidence || d.avgConfidence || 0);
+        const avgConfidence = confidences.reduce((a, b) => a + b, 0) / confidences.length;
+
+        comparisons.push({
+            name: speciesName,
+            count: speciesDetections.length,
+            hourlyPattern: hourlyPattern,
+            peakHours: peakHours,
+            avgConfidence: avgConfidence,
+            firstSeen: firstSeen,
+            lastSeen: lastSeen
+        });
+    });
+
+    // Calculate overlap metrics
+    const overlaps = calculateActivityOverlap(comparisons);
+
+    return {
+        species: comparisons,
+        overlaps: overlaps,
+        summary: generateComparisonSummary(comparisons, overlaps)
+    };
+}
+
+/**
+ * Calculate activity overlap between species
+ */
+function calculateActivityOverlap(comparisons) {
+    const overlaps = [];
+
+    for (let i = 0; i < comparisons.length; i++) {
+        for (let j = i + 1; j < comparisons.length; j++) {
+            const species1 = comparisons[i];
+            const species2 = comparisons[j];
+
+            // Calculate hourly overlap
+            let overlapHours = 0;
+            let totalActivityHours = 0;
+
+            for (let hour = 0; hour < 24; hour++) {
+                const count1 = species1.hourlyPattern[hour];
+                const count2 = species2.hourlyPattern[hour];
+
+                if (count1 > 0 && count2 > 0) {
+                    overlapHours++;
+                }
+                if (count1 > 0 || count2 > 0) {
+                    totalActivityHours++;
+                }
+            }
+
+            const overlapPercentage = totalActivityHours > 0
+                ? (overlapHours / totalActivityHours) * 100
+                : 0;
+
+            overlaps.push({
+                species1: species1.name,
+                species2: species2.name,
+                overlapPercentage: overlapPercentage.toFixed(1),
+                overlapHours: overlapHours,
+                totalHours: totalActivityHours
+            });
+        }
+    }
+
+    return overlaps;
+}
+
+/**
+ * Generate comparison summary
+ */
+function generateComparisonSummary(comparisons, overlaps) {
+    const summary = [];
+
+    // Most active species
+    const mostActive = [...comparisons].sort((a, b) => b.count - a.count)[0];
+    if (mostActive) {
+        summary.push(`${mostActive.name} is most active with ${mostActive.count} detections`);
+    }
+
+    // Highest overlap
+    if (overlaps.length > 0) {
+        const highestOverlap = [...overlaps].sort((a, b) => parseFloat(b.overlapPercentage) - parseFloat(a.overlapPercentage))[0];
+        summary.push(`${highestOverlap.species1} and ${highestOverlap.species2} overlap ${highestOverlap.overlapPercentage}% of the time`);
+    }
+
+    // Time separation
+    if (overlaps.length > 0) {
+        const lowestOverlap = [...overlaps].sort((a, b) => parseFloat(a.overlapPercentage) - parseFloat(b.overlapPercentage))[0];
+        if (parseFloat(lowestOverlap.overlapPercentage) < 30) {
+            summary.push(`${lowestOverlap.species1} and ${lowestOverlap.species2} prefer different times (${lowestOverlap.overlapPercentage}% overlap)`);
+        }
+    }
+
+    return summary;
+}
+
+/**
+ * Format hour for display
+ */
+function formatHour(hour) {
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:00 ${period}`;
+}
+
+/**
+ * Enhanced predictions with weather integration
+ */
+export function predictActivityWithWeather(detections, weatherData) {
+    const basePredictions = predictPeakActivity(detections, 7);
+
+    if (!weatherData || !weatherData.forecast) {
+        return basePredictions;
+    }
+
+    // Enhance predictions with weather
+    const enhancedPredictions = basePredictions.map((prediction, index) => {
+        const forecast = weatherData.forecast[index];
+        if (!forecast) return prediction;
+
+        // Adjust confidence based on weather
+        let weatherAdjustment = 0;
+        let weatherFactors = [];
+
+        // Temperature impact
+        if (forecast.temp >= 60 && forecast.temp <= 75) {
+            weatherAdjustment += 15;
+            weatherFactors.push('Ideal temperature');
+        } else if (forecast.temp < 32 || forecast.temp > 90) {
+            weatherAdjustment -= 20;
+            weatherFactors.push(forecast.temp < 32 ? 'Very cold' : 'Very hot');
+        }
+
+        // Rain impact
+        if (forecast.rain > 0.1) {
+            weatherAdjustment -= 25;
+            weatherFactors.push('Rain expected');
+        }
+
+        // Wind impact
+        if (forecast.windSpeed > 15) {
+            weatherAdjustment -= 15;
+            weatherFactors.push('High winds');
+        }
+
+        // Adjust confidence (keep between 0-100)
+        const adjustedConfidence = Math.max(0, Math.min(100, prediction.confidence + weatherAdjustment));
+
+        return {
+            ...prediction,
+            weather: {
+                temp: forecast.temp,
+                description: forecast.description,
+                icon: forecast.icon
+            },
+            confidence: adjustedConfidence,
+            weatherFactors: weatherFactors,
+            weatherAdjustment: weatherAdjustment
+        };
+    });
+
+    return enhancedPredictions;
+}
