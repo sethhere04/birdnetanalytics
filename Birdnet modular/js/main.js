@@ -195,13 +195,16 @@ async function loadData() {
         let detections;
         let species;
 
+        // Capture previous species count BEFORE updating
+        const previousSpeciesCount = AppState.data.species.length;
+
         if (AppState.isInitialLoad) {
             // Initial load: Fetch detections up to configured limit
             console.log('🔄 Initial load - fetching detections...');
             const estimatedPages = Math.ceil(API_CONFIG.initialLoadLimit / 100);
             const estimatedSeconds = Math.ceil(estimatedPages / 2); // Roughly 2 pages per second
             console.log(`⏳ Loading up to ${API_CONFIG.initialLoadLimit.toLocaleString()} detections (~${estimatedPages} pages, ~${estimatedSeconds}s)`);
-            console.log(`💡 Tip: Adjust initialLoadLimit in js/api.js to change load speed vs data completeness`);
+            console.log(`💡 Tip: Adjust initialLoadLimit in Settings to change load speed vs data completeness`);
 
             const [speciesData, allDetections] = await Promise.all([
                 fetchSpecies(),
@@ -251,8 +254,6 @@ async function loadData() {
             AppState.data.lastDetectionTime = latestTime;
         }
 
-        // Load species images from API thumbnail_url (only when species list changes)
-        const previousSpeciesCount = AppState.data.species.length;
         AppState.data.detections = detections;
 
         // Debug: Log species count changes
@@ -262,6 +263,7 @@ async function loadData() {
 
         // Load images only when species list changes or on first load
         if (previousSpeciesCount === 0 || AppState.data.species.length !== previousSpeciesCount) {
+            console.log(`📸 Loading species thumbnails (${AppState.data.species.length} species)`);
             loadSpeciesImages(AppState.data.species);
         }
 
