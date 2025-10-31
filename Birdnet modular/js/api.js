@@ -1,240 +1,196 @@
-// API Module - Simplified for existing backend compatibility
-console.log('Loading BirdNET.api module...');
+/**
+ * API Module - Handles all API calls to BirdNET-Go
+ */
 
-(function() {
-    'use strict';
-    
-    const api = BirdNET.api;
-    const config = BirdNET.config;
-    const cache = BirdNET.cache;
-    
-    // Main fetch function - compatible with existing backend
-    api.fetchData = async function() {
-        try {
-            console.log('Fetching species summary from:', config.API_BASE + '/analytics/species/summary');
-            const response = await fetch(config.API_BASE + '/analytics/species/summary');
-            
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-            }
-            
-            let data = await response.json();
-            
-            // Normalize data structure
-            if (!Array.isArray(data)) {
-                console.warn('Unexpected data format, wrapping in array');
-                data = [data];
-            }
-            
-            // Store in namespace
-            BirdNET.data.originalSpecies = data;
-            BirdNET.data.species = data.slice();
-            
-            console.log('✅ Fetched ' + data.length + ' species');
-            return data;
-            
-        } catch (error) {
-            console.error('Failed to fetch species data:', error);
-            throw error;
-        }
-    };
-    
-    // Fetch all detections
-    api.fetchDetections = async function(limit = 100) {
-        try {
-            // Try multiple possible endpoints for v2 API
-            const possibleEndpoints = [
-                config.API_BASE + '/detections?limit=' + limit,
-                config.API_BASE + '/notes?limit=' + limit + '&offset=0',
-                config.API_BASE.replace('/v2', '') + '/notes?limit=' + limit + '&offset=0'
-            ];
-            
-            let data = null;
-            let lastError = null;
-            
-            for (const endpoint of possibleEndpoints) {
-                try {
-                    console.log('Trying detections endpoint:', endpoint);
-                    const response = await fetch(endpoint);
-                    
-                    if (response.ok) {
-                        data = await response.json();
-                        console.log('✅ Found working endpoint:', endpoint);
+export const API_CONFIG = {
+    baseUrl: 'http://192.168.68.129:8080/api/v2',
+    audioBaseUrl: 'http://192.168.68.129:8080/api/v2/audio',
+    refreshInterval: 60000, // 1 minute
+    get initialLoadLimit() {
+        // Load from localStorage, fallback to 5000
+        const saved = localStorage.getItem('initialLoadLimit');
+        return saved ? parseInt(saved, 10) : 5000;
+    },
+    set initialLoadLimit(value) {
+        localStorage.setItem('initialLoadLimit', value.toString());
+    }
+};
+
+/**
+ * Fetch species summary from API
+ */
+export async function fetchSpecies() {
+    try {
+        const url = `${API_CONFIG.baseUrl}/analytics/species/summary`;
+        console.log(`📡 Fetching species from: ${url}`);
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        const species = Array.isArray(data) ? data : [];
+
+        console.log(`✅ API returned ${species.length} species`);
+
+        return species;
+    } catch (error) {
+        console.warn('Species endpoint failed:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch recent detections from API with pagination support
+ * @param {Date} sinceTime - Optional: Only fetch detections newer than this time (for incremental loading)
+ * Fetches multiple pages to get up to 2000 detections for accurate daily counts
+ */
+export async function fetchDetections(sinceTime = null) {
+    try {
+        const endpoints = [
+            { base: '/detections', limit: 100 },
+            { base: '/notes', limit: 100 }
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                const allDetections = [];
+                let offset = 0;
+                const maxDetections = sinceTime ? 200 : API_CONFIG.initialLoadLimit; // Incremental: 2 pages, Initial: use config
+                let hasMorePages = true;
+
+                if (sinceTime) {
+                    console.log(`📡 Fetching NEW detections from: ${endpoint.base} (since ${sinceTime.toLocaleString()})`);
+                } else {
+                    console.log(`📡 Fetching paginated detections from: ${endpoint.base} (limit: ${API_CONFIG.initialLoadLimit})`);
+                }
+
+                while (hasMorePages && allDetections.length < maxDetections) {
+                    const url = `${API_CONFIG.baseUrl}${endpoint.base}?limit=${endpoint.limit}&offset=${offset}`;
+                    const response = await fetch(url);
+
+                    if (!response.ok) break;
+
+                    const data = await response.json();
+
+                    // Handle different response formats
+                    let pageDetections;
+                    let totalAvailable;
+                    let totalPages;
+
+                    if (Array.isArray(data)) {
+                        // Simple array format
+                        pageDetections = data;
+                        hasMorePages = data.length === endpoint.limit;
+                    } else if (data.data) {
+                        // Paginated format with metadata
+                        pageDetections = data.data;
+                        totalAvailable = data.total || 0;
+                        totalPages = data.total_pages || 1;
+
+                        // Show progress every 10 pages, or every page for first 10 pages
+                        const currentPage = data.current_page || 1;
+                        if (currentPage <= 10 || currentPage % 10 === 0) {
+                            const progress = ((allDetections.length / totalAvailable) * 100).toFixed(1);
+                            console.log(`📄 Page ${currentPage}/${totalPages}: ${allDetections.length}/${totalAvailable} detections (${progress}%)`);
+                        }
+
+                        hasMorePages = (data.current_page || 1) < totalPages;
+                    } else {
+                        // Unknown format
                         break;
                     }
-                } catch (err) {
-                    lastError = err;
-                    continue;
+
+                    if (pageDetections.length === 0) {
+                        hasMorePages = false;
+                        break;
+                    }
+
+                    allDetections.push(...pageDetections);
+                    offset += endpoint.limit;
+
+                    // Stop if we've reached the max or got all available
+                    if (totalAvailable && allDetections.length >= totalAvailable) {
+                        hasMorePages = false;
+                    }
                 }
-            }
-            
-            if (!data) {
-                console.warn('⚠️ No detections endpoint available. Continuing without detection data.');
-                BirdNET.data.detections = [];
-                return [];
-            }
-            
-            // Normalize array structure
-            const detections = Array.isArray(data) ? data : (data.data || data.detections || []);
-            
-            BirdNET.data.detections = detections;
-            
-            console.log('✅ Fetched ' + detections.length + ' detections');
-            return detections;
-            
-        } catch (error) {
-            console.error('Failed to fetch detections:', error);
-            BirdNET.data.detections = [];
-            return [];
-        }
-    };
-    
-    // Fetch daily detection counts
-    api.fetchDailyDetectionCounts = async function() {
-        try {
-            console.log('Fetching daily counts...');
-            const response = await fetch(config.API_BASE + '/analytics/detections/daily');
-            
-            if (!response.ok) {
-                throw new Error('Failed to fetch daily counts');
-            }
-            
-            const data = await response.json();
-            BirdNET.data.dailyCounts = data;
-            
-            console.log('✅ Fetched daily counts');
-            return data;
-            
-        } catch (error) {
-            console.error('Failed to fetch daily counts:', error);
-            return {};
-        }
-    };
-    
-    // Get audio clip URL
-    api.getAudioClipUrl = function(noteId) {
-        return config.API_BASE + '/audio/' + noteId;
-    };
-    
-    // Fetch species information from Wikipedia
-    api.fetchWikipediaInfo = async function(speciesName) {
-        const cacheKey = 'wiki_' + speciesName.toLowerCase();
-        
-        if (cache.speciesInfo[cacheKey]) {
-            return cache.speciesInfo[cacheKey];
-        }
-        
-        try {
-            const searchUrl = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + 
-                            encodeURIComponent(speciesName);
-            const response = await fetch(searchUrl);
-            
-            if (!response.ok) {
-                throw new Error('Wikipedia fetch failed');
-            }
-            
-            const data = await response.json();
-            
-            const info = {
-                description: data.extract || 'No description available',
-                thumbnail: data.thumbnail ? data.thumbnail.source : null,
-                image: data.originalimage ? data.originalimage.source : null,
-                url: data.content_urls ? data.content_urls.desktop.page : null
-            };
-            
-            cache.speciesInfo[cacheKey] = info;
-            return info;
-            
-        } catch (error) {
-            console.warn('Wikipedia fetch failed for ' + speciesName);
-            return null;
-        }
-    };
-    
-    // Fetch photos from iNaturalist
-    api.fetchiNaturalistPhotos = async function(speciesName) {
-        try {
-            const searchUrl = 'https://api.inaturalist.org/v1/taxa?q=' + 
-                            encodeURIComponent(speciesName) + 
-                            '&rank=species&per_page=1';
-            const response = await fetch(searchUrl);
-            
-            if (!response.ok) {
-                throw new Error('iNaturalist fetch failed');
-            }
-            
-            const data = await response.json();
-            
-            if (data.results && data.results.length > 0) {
-                const taxon = data.results[0];
-                return {
-                    photos: taxon.taxon_photos ? 
-                           taxon.taxon_photos.map(p => p.photo.medium_url).slice(0, 5) : 
-                           [],
-                    conservationStatus: taxon.conservation_status ? 
-                                      taxon.conservation_status.status : 
-                                      null,
-                    wikipediaUrl: taxon.wikipedia_url || null
-                };
-            }
-            
-            return null;
-            
-        } catch (error) {
-            console.warn('iNaturalist fetch failed for ' + speciesName);
-            return null;
-        }
-    };
-    
-    // Get comprehensive species information
-    api.getSpeciesInfo = async function(speciesName, scientificName) {
-        const cacheKey = speciesName.toLowerCase();
-        
-        if (cache.speciesInfo[cacheKey]) {
-            return cache.speciesInfo[cacheKey];
-        }
-        
-        console.log('Fetching comprehensive info for:', speciesName);
-        
-        const [wikiInfo, iNatPhotos] = await Promise.all([
-            api.fetchWikipediaInfo(speciesName),
-            api.fetchiNaturalistPhotos(speciesName)
-        ]);
-        
-        const speciesInfo = {
-            commonName: speciesName,
-            scientificName: scientificName || 'Unknown',
-            description: null,
-            photos: [],
-            conservationStatus: null,
-            wikipediaUrl: null
-        };
-        
-        if (wikiInfo) {
-            speciesInfo.description = wikiInfo.description;
-            speciesInfo.wikipediaUrl = wikiInfo.url;
-            if (wikiInfo.image) {
-                speciesInfo.photos.push(wikiInfo.image);
+
+                if (allDetections.length > 0) {
+                    // Filter by sinceTime if doing incremental loading
+                    if (sinceTime) {
+                        const newDetections = allDetections.filter(d => {
+                            const detectionTime = parseDetectionDate(d);
+                            return detectionTime > sinceTime;
+                        });
+
+                        console.log(`✅ Fetched ${allDetections.length} detections, ${newDetections.length} are new (since ${sinceTime.toLocaleString()})`);
+                        return newDetections;
+                    } else {
+                        console.log(`✅ Fetched ${allDetections.length} total detections from ${endpoint.base}`);
+                        return allDetections;
+                    }
+                }
+            } catch (e) {
+                console.warn(`Failed to fetch from ${endpoint.base}:`, e);
+                continue;
             }
         }
-        
-        if (iNatPhotos) {
-            if (iNatPhotos.photos && iNatPhotos.photos.length > 0) {
-                speciesInfo.photos = speciesInfo.photos.concat(iNatPhotos.photos);
-            }
-            speciesInfo.conservationStatus = iNatPhotos.conservationStatus;
-            if (iNatPhotos.wikipediaUrl && !speciesInfo.wikipediaUrl) {
-                speciesInfo.wikipediaUrl = iNatPhotos.wikipediaUrl;
-            }
-        }
-        
-        // Remove duplicates
-        speciesInfo.photos = [...new Set(speciesInfo.photos)];
-        
-        cache.speciesInfo[cacheKey] = speciesInfo;
-        return speciesInfo;
-    };
-    
-    console.log('✅ BirdNET.api module loaded');
-    
-})();
+
+        console.warn('No detections endpoint available');
+        return [];
+    } catch (error) {
+        console.error('Failed to fetch detections:', error);
+        return [];
+    }
+}
+
+/**
+ * Parse detection date/time from API format
+ * API format: { "date": "2025-10-27", "time": "10:53:12" }
+ */
+export function parseDetectionDate(detection) {
+    // Handle separate date and time fields (BirdNET-Go v2 format)
+    if (detection.date && detection.time) {
+        return new Date(`${detection.date}T${detection.time}`);
+    }
+
+    // Fallback to other formats
+    if (detection.begin_time) return new Date(detection.begin_time);
+    if (detection.timestamp) return new Date(detection.timestamp);
+    if (detection.date) return new Date(detection.date);
+    if (detection.DateTime) return new Date(detection.DateTime);
+
+    // Last resort - use current time
+    return new Date();
+}
+
+/**
+ * Get audio URL for a detection
+ * @param {Object} detection - Detection object from API
+ * @returns {string|null} - Audio URL or null if not available
+ */
+export function getAudioUrl(detection) {
+    // BirdNET-Go v2 API uses detection ID: /api/v2/audio/{id}
+
+    // Get detection ID
+    const detectionId = detection.id || detection.detectionId || detection.noteId;
+
+    if (!detectionId) {
+        console.warn('❌ No detection ID found for audio. Available fields:', Object.keys(detection));
+        return null;
+    }
+
+    // Construct the audio URL using the ID
+    const audioUrl = `${API_CONFIG.audioBaseUrl}/${detectionId}`;
+    console.log('🎵 Constructed audio URL:', audioUrl, 'for detection ID:', detectionId);
+    return audioUrl;
+}
+
+/**
+ * Check if a detection has audio available
+ * @param {Object} detection - Detection object from API
+ * @returns {boolean} - True if audio is likely available
+ */
+export function hasAudio(detection) {
+    // Audio is available if we have a detection ID
+    return !!(detection.id || detection.detectionId || detection.noteId);
+}
