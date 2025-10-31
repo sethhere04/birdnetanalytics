@@ -95,6 +95,14 @@ function setupEventListeners() {
         });
     }
 
+    // Date range filter
+    const dateRangeFilter = document.getElementById('date-range-filter');
+    if (dateRangeFilter) {
+        dateRangeFilter.addEventListener('change', (e) => {
+            applyFilters({ dateRange: e.target.value });
+        });
+    }
+
     // Settings modal
     const settingsToggle = document.getElementById('settings-toggle');
     const settingsModal = document.getElementById('settings-modal');

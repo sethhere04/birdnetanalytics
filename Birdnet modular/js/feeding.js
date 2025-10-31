@@ -106,10 +106,21 @@ export function getSeasonalRecommendations() {
 }
 
 /**
+ * Get species name from various API formats
+ */
+function getSpeciesName(species) {
+    return species.commonName || species.common_name || species.name || species.scientificName || '';
+}
+
+/**
  * Get species-specific feeding recommendations
  */
 export function getSpeciesFeedingData(topSpecies) {
-    const speciesWithFeeding = topSpecies.filter(s => birdFoodDatabase[s.name]).slice(0, 12);
+    // Filter species that have feeding data in our database
+    const speciesWithFeeding = topSpecies
+        .map(s => ({ ...s, displayName: getSpeciesName(s) }))
+        .filter(s => birdFoodDatabase[s.displayName])
+        .slice(0, 12);
 
     if (speciesWithFeeding.length === 0) {
         return { speciesWithFeeding: [], allFoods: {}, allFeeders: {} };
@@ -119,14 +130,14 @@ export function getSpeciesFeedingData(topSpecies) {
     const allFeeders = {};
 
     speciesWithFeeding.forEach(species => {
-        const feedingData = birdFoodDatabase[species.name];
+        const feedingData = birdFoodDatabase[species.displayName];
         feedingData.foods.forEach(food => {
             if (!allFoods[food]) allFoods[food] = [];
-            allFoods[food].push(species.name);
+            allFoods[food].push(species.displayName);
         });
         feedingData.feeder.forEach(feeder => {
             if (!allFeeders[feeder]) allFeeders[feeder] = [];
-            allFeeders[feeder].push(species.name);
+            allFeeders[feeder].push(species.displayName);
         });
     });
 

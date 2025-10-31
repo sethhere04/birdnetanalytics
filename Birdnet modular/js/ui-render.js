@@ -4,11 +4,14 @@
 
 import * as charts from './charts.js';
 import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats } from './analytics.js';
-import { getCurrentSeason, getSeasonalRecommendations, getSpeciesFeedingData } from './feeding.js';
+import { getCurrentSeason, getSeasonalRecommendations, getSpeciesFeedingData, getFeedingDataForSpecies } from './feeding.js';
 import { analyzeMigrationPatterns } from './migration.js';
 
 // Store species images loaded from API
 let speciesImagesCache = {};
+
+// Store current species data for gallery filters
+let currentSpeciesData = [];
 
 /**
  * Set species images cache
@@ -215,11 +218,14 @@ export function renderDiversityMetrics(speciesData) {
 export function renderSpecies(analytics, detections, speciesData) {
     const allSpecies = analytics.allSpecies;
 
+    // Store species data for gallery filters
+    currentSpeciesData = speciesData;
+
     // NEW: Render photo gallery
     renderPhotoGallery(speciesData, 'detections', 0);
 
     // Setup gallery controls
-    setupGalleryControls(speciesData);
+    setupGalleryControls();
 
     // Render all species list with search/filter capability
     const container = document.getElementById('all-species-container');
@@ -341,7 +347,7 @@ export function renderPhotoGallery(speciesData, sortBy = 'detections', minConfid
 /**
  * Setup gallery controls
  */
-function setupGalleryControls(speciesData) {
+function setupGalleryControls() {
     const sortSelect = document.getElementById('gallery-sort');
     const confidenceSlider = document.getElementById('confidence-filter');
     const confidenceLabel = document.getElementById('confidence-label');
@@ -349,7 +355,8 @@ function setupGalleryControls(speciesData) {
     if (sortSelect && !sortSelect.dataset.initialized) {
         sortSelect.addEventListener('change', (e) => {
             const minConfidence = confidenceSlider ? parseInt(confidenceSlider.value) : 0;
-            renderPhotoGallery(speciesData, e.target.value, minConfidence);
+            // Use currentSpeciesData from module scope instead of closure
+            renderPhotoGallery(currentSpeciesData, e.target.value, minConfidence);
         });
         sortSelect.dataset.initialized = 'true';
     }
@@ -361,7 +368,8 @@ function setupGalleryControls(speciesData) {
                 confidenceLabel.textContent = `Min Confidence: ${value}%`;
             }
             const sortBy = sortSelect ? sortSelect.value : 'detections';
-            renderPhotoGallery(speciesData, sortBy, parseInt(value));
+            // Use currentSpeciesData from module scope instead of closure
+            renderPhotoGallery(currentSpeciesData, sortBy, parseInt(value));
         });
         confidenceSlider.dataset.initialized = 'true';
     }
@@ -689,8 +697,9 @@ export function renderSpeciesFeedingGuide(speciesData) {
         <div class="species-feeding-list">
             <h3>🐦 Individual Species Preferences</h3>
             ${speciesWithFeeding.map(species => {
-                const imageUrl = getSpeciesImageUrl(species.name);
-                const feedingData = getSpeciesFeedingData([species]).speciesWithFeeding[0];
+                const speciesName = species.displayName;
+                const imageUrl = getSpeciesImageUrl(speciesName);
+                const feedingData = getFeedingDataForSpecies(speciesName);
                 if (!feedingData) return '';
 
                 return `
@@ -700,7 +709,7 @@ export function renderSpeciesFeedingGuide(speciesData) {
                                 ${!imageUrl ? '🐦' : ''}
                             </div>
                             <div>
-                                <strong>${species.name}</strong>
+                                <strong>${speciesName}</strong>
                                 <div class="species-diet-badge">${feedingData.diet || 'Various'}</div>
                             </div>
                         </div>

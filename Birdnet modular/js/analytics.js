@@ -13,18 +13,47 @@ export function analyzeData(species, detections, filters) {
         return getEmptyAnalytics();
     }
 
+    // Apply date range filter if specified
+    let filteredDetections = detections;
+    if (filters && filters.dateRange && filters.dateRange !== 'all') {
+        const now = new Date();
+        let cutoffDate;
+
+        switch (filters.dateRange) {
+            case 'today':
+                cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                break;
+            case 'week':
+                cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case 'month':
+                cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            default:
+                cutoffDate = null;
+        }
+
+        if (cutoffDate) {
+            filteredDetections = detections.filter(d => {
+                const detectionDate = parseDetectionDate(d);
+                return detectionDate >= cutoffDate;
+            });
+            console.log(`🔍 Date filter applied: ${detections.length} → ${filteredDetections.length} detections (${filters.dateRange})`);
+        }
+    }
+
     const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
 
     return {
         totalSpecies: species.length,
         totalDetections: totalDetections,
-        filteredDetections: totalDetections,
+        filteredDetections: filteredDetections.length,
 
-        // Time-based analytics (from recent 100 detections - sample)
-        daily: analyzeDailyActivity(detections),
-        hourly: analyzeHourlyPattern(detections),
-        weekly: analyzeWeeklyPattern(detections),
-        monthly: analyzeMonthlyPattern(detections),
+        // Time-based analytics (use filtered detections)
+        daily: analyzeDailyActivity(filteredDetections),
+        hourly: analyzeHourlyPattern(filteredDetections),
+        weekly: analyzeWeeklyPattern(filteredDetections),
+        monthly: analyzeMonthlyPattern(filteredDetections),
 
         // Species analytics (from species summary - accurate)
         topSpecies: getTopSpeciesFromSummary(species),
@@ -32,12 +61,12 @@ export function analyzeData(species, detections, filters) {
         diversity: calculateDiversityFromSummary(species),
         rarest: getRarestFromSummary(species),
 
-        // Recent activity
-        today: getTodayStats(detections),
-        recent: getRecentDetections(detections, 50),
+        // Recent activity (use filtered detections)
+        today: getTodayStats(filteredDetections),
+        recent: getRecentDetections(filteredDetections, 50),
 
         // Insights
-        insights: generateInsightsFromSummary(species, detections)
+        insights: generateInsightsFromSummary(species, filteredDetections)
     };
 }
 
