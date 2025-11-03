@@ -108,8 +108,8 @@ body {
 .grid {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 .col-12 { grid-column: span 12; }
@@ -125,8 +125,8 @@ body {
 /* Cards */
 .card {
     background: var(--bg-card);
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 8px;
+    padding: 0.75rem;
     box-shadow: 0 1px 3px var(--shadow);
     border: 1px solid var(--border);
 }
@@ -135,11 +135,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .card-title {
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--text);
     display: flex;
@@ -168,9 +168,9 @@ body {
 }
 
 .card-subtitle {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: var(--text-light);
-    margin-top: 0.25rem;
+    margin-top: 0.2rem;
 }
 
 /* Tabs */
@@ -223,7 +223,7 @@ body {
 
 /* Species List */
 .species-list {
-    max-height: 500px;
+    max-height: 400px;
     overflow-y: auto;
 }
 
@@ -282,7 +282,7 @@ body {
 /* Timeline */
 .timeline {
     position: relative;
-    padding-left: 2rem;
+    padding-left: 1.5rem;
 }
 
 .timeline::before {
@@ -378,12 +378,12 @@ body {
 /* Charts */
 .chart-container {
     position: relative;
-    height: 300px;
+    height: 250px;
 }
 
 .chart-container-large {
     position: relative;
-    height: 400px;
+    height: 320px;
 }
 
 /* Badge */
@@ -4153,16 +4153,16 @@ body {
 .timeline-chart {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .timeline-row {
     display: grid;
-    grid-template-columns: 250px 1fr;
-    gap: 1rem;
+    grid-template-columns: 200px 1fr;
+    gap: 0.75rem;
     align-items: center;
-    padding: 0.5rem;
-    border-radius: 6px;
+    padding: 0.4rem;
+    border-radius: 4px;
     transition: background-color 0.2s;
 }
 
@@ -4274,16 +4274,16 @@ body {
 .alerts-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .predictive-alert-card {
     display: flex;
-    gap: 1rem;
-    padding: 1rem;
+    gap: 0.75rem;
+    padding: 0.75rem;
     background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%);
-    border-left: 4px solid #f59e0b;
-    border-radius: 8px;
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
     transition: all 0.3s;
 }
 
@@ -4297,7 +4297,7 @@ body {
 }
 
 .alert-icon {
-    font-size: 2rem;
+    font-size: 1.5rem;
     flex-shrink: 0;
 }
 
@@ -4305,7 +4305,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.35rem;
 }
 
 .alert-header {
@@ -4315,12 +4315,12 @@ body {
 }
 
 .alert-message {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-primary);
 }
 
 .alert-details {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-light);
 }
 
@@ -4328,29 +4328,30 @@ body {
 .milestones-grid {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
 }
 
 .milestone-section h4 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     color: var(--text-primary);
+    font-size: 1rem;
 }
 
 .milestone-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
 }
 
 .milestone-card {
     background: var(--bg-primary);
     border: 2px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1.5rem;
+    border-radius: 6px;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     transition: all 0.3s;
 }
 
@@ -4369,12 +4370,12 @@ body {
 }
 
 .milestone-icon {
-    font-size: 2.5rem;
+    font-size: 2rem;
 }
 
 .milestone-title {
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     text-align: center;
     color: var(--text-primary);
 }
@@ -4427,15 +4428,15 @@ body {
 .recommendations-list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .recommendation-card {
     display: flex;
-    gap: 1rem;
-    padding: 1.5rem;
-    border-radius: 8px;
-    border-left: 4px solid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 6px;
+    border-left: 3px solid;
     transition: all 0.3s;
 }
 
@@ -4472,7 +4473,7 @@ body {
 }
 
 .rec-icon {
-    font-size: 2rem;
+    font-size: 1.5rem;
     flex-shrink: 0;
 }
 
@@ -4480,19 +4481,19 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.35rem;
 }
 
 .rec-title {
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     color: var(--text-primary);
 }
 
 .rec-message {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     color: var(--text-primary);
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
 .rec-action {
