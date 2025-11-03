@@ -6,6 +6,7 @@ import * as charts from './charts.js';
 import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats, getSpeciesForPeriod, calculateYearOverYear, calculateSpeciesStreaks, calculateRarityScores, detectActivityAnomalies, getMissingSpeciesAlerts, predictBestWatchTimes } from './analytics.js';
 import { getCurrentSeason, getSeasonalRecommendations, getSpeciesFeedingData, getFeedingDataForSpecies } from './feeding.js';
 import { analyzeMigrationPatterns } from './migration.js';
+import { parseDetectionDate } from './api.js';
 import * as AudioPlayer from './audio-player.js';
 
 // Store species images loaded from API
@@ -149,8 +150,8 @@ export function renderRecentDetectionsTable(detections, speciesData, limit = 10)
 
     // Sort detections by date (most recent first)
     const sortedDetections = [...detections].sort((a, b) => {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
+        const dateA = parseDetectionDate(a);
+        const dateB = parseDetectionDate(b);
         return dateB - dateA;
     });
 
@@ -169,7 +170,7 @@ export function renderRecentDetectionsTable(detections, speciesData, limit = 10)
         const thumbnail = getSpeciesImageUrl(speciesName);
 
         // Parse date and time
-        const detectionDate = new Date(detection.date);
+        const detectionDate = parseDetectionDate(detection);
         const dateStr = detectionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const timeStr = detectionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
