@@ -75,6 +75,25 @@ function setupEventListeners() {
         refreshBtn.addEventListener('click', () => loadData());
     }
 
+    // Sidebar toggle
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+
+    if (sidebarToggle && sidebar) {
+        // Load saved sidebar state
+        const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        if (sidebarCollapsed) {
+            sidebar.classList.add('collapsed');
+        }
+
+        // Toggle sidebar
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebar-collapsed', isCollapsed);
+        });
+    }
+
     // Load saved theme preference on startup
     const savedPreference = localStorage.getItem('theme-preference') || 'auto';
     applyThemePreference(savedPreference);
@@ -438,11 +457,35 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById(`${tabName}-tab`)?.classList.add('active');
 
+    // Update page title
+    updatePageTitle(tabName);
+
     // Store current tab
     AppState.currentTab = tabName;
 
     // Render the tab
     renderCurrentTab();
+}
+
+/**
+ * Update page title based on current tab
+ */
+function updatePageTitle(tabName) {
+    const pageTitleEl = document.getElementById('page-title');
+    if (!pageTitleEl) return;
+
+    const tabTitles = {
+        'overview': '📊 Overview',
+        'species': '🐦 Species',
+        'insights': '💡 Insights',
+        'trends': '📈 Trends',
+        'analytics': '🔬 Analytics',
+        'activity': '⏰ Activity',
+        'migration': '🦅 Migration',
+        'feeding': '🌻 Feeding'
+    };
+
+    pageTitleEl.textContent = tabTitles[tabName] || '📊 Dashboard';
 }
 
 /**
@@ -594,8 +637,39 @@ function updateUI() {
     // Update dashboard header
     UIRender.updateDashboardHeader(analytics);
 
+    // Update quick stats bar
+    updateQuickStats(analytics, species, detections);
+
     // Render current tab
     renderCurrentTab();
+}
+
+/**
+ * Update the quick stats bar with current metrics
+ */
+function updateQuickStats(analytics, species, detections) {
+    // Total Species
+    const totalSpecies = species?.length || 0;
+    document.getElementById('quick-stat-total-species').textContent = totalSpecies.toLocaleString();
+
+    // Total Detections
+    const totalDetections = detections?.length || 0;
+    document.getElementById('quick-stat-total-detections').textContent = totalDetections.toLocaleString();
+
+    // Today's metrics
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayDetections = detections?.filter(d => {
+        const detectionDate = parseDetectionDate(d.date);
+        detectionDate.setHours(0, 0, 0, 0);
+        return detectionDate.getTime() === today.getTime();
+    }) || [];
+
+    const todaySpecies = new Set(todayDetections.map(d => d.commonName || d.common_name || d.scientificName));
+
+    document.getElementById('quick-stat-today-species').textContent = todaySpecies.size.toLocaleString();
+    document.getElementById('quick-stat-today-detections').textContent = todayDetections.length.toLocaleString();
 }
 
 /**

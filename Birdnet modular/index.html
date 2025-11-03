@@ -29,8 +29,13 @@
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <h1 class="sidebar-title">🦜 BirdNET</h1>
-            <p class="sidebar-subtitle">Analytics</p>
+            <div class="sidebar-branding">
+                <h1 class="sidebar-title">🦜 BirdNET</h1>
+                <p class="sidebar-subtitle">Analytics</p>
+            </div>
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle Sidebar">
+                <span class="toggle-icon">‹</span>
+            </button>
         </div>
 
         <nav class="sidebar-nav">
@@ -84,6 +89,9 @@
     <div class="main-content">
         <!-- Top Bar -->
         <div class="top-bar">
+            <div class="top-bar-left">
+                <h2 class="page-title" id="page-title">📊 Overview</h2>
+            </div>
             <div class="filters">
                 <select id="date-range-filter" class="filter-select">
                     <option value="all">All Time</option>
@@ -97,6 +105,38 @@
             <div class="top-bar-actions">
                 <button id="refresh-btn" class="btn-icon" title="Refresh data">🔄</button>
                 <button id="export-csv-btn" class="btn-icon" title="Export CSV">📥</button>
+            </div>
+        </div>
+
+        <!-- Quick Stats Bar -->
+        <div class="quick-stats-bar">
+            <div class="quick-stat">
+                <span class="quick-stat-icon">🦜</span>
+                <div class="quick-stat-content">
+                    <span class="quick-stat-value" id="quick-stat-total-species">-</span>
+                    <span class="quick-stat-label">Total Species</span>
+                </div>
+            </div>
+            <div class="quick-stat">
+                <span class="quick-stat-icon">📊</span>
+                <div class="quick-stat-content">
+                    <span class="quick-stat-value" id="quick-stat-total-detections">-</span>
+                    <span class="quick-stat-label">Total Detections</span>
+                </div>
+            </div>
+            <div class="quick-stat">
+                <span class="quick-stat-icon">🌅</span>
+                <div class="quick-stat-content">
+                    <span class="quick-stat-value" id="quick-stat-today-species">-</span>
+                    <span class="quick-stat-label">Today's Species</span>
+                </div>
+            </div>
+            <div class="quick-stat">
+                <span class="quick-stat-icon">⏰</span>
+                <div class="quick-stat-content">
+                    <span class="quick-stat-value" id="quick-stat-today-detections">-</span>
+                    <span class="quick-stat-label">Today's Detections</span>
+                </div>
             </div>
         </div>
 
