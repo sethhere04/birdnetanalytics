@@ -536,19 +536,41 @@ export async function renderInsights(analytics, speciesData, detections) {
     });
 
     // Activity anomalies (today's alerts)
-    renderActivityAnomalies(detections, speciesData);
+    try {
+        renderActivityAnomalies(detections, speciesData);
+    } catch (error) {
+        console.error('Error in renderActivityAnomalies:', error);
+    }
 
     // Missing species alerts
-    renderMissingSpeciesAlerts(speciesData, detections);
+    try {
+        renderMissingSpeciesAlerts(speciesData, detections);
+    } catch (error) {
+        console.error('Error in renderMissingSpeciesAlerts:', error);
+    }
 
     // Best watch times
-    renderBestWatchTimes(detections);
+    try {
+        renderBestWatchTimes(detections);
+    } catch (error) {
+        console.error('Error in renderBestWatchTimes:', error);
+    }
 
     // Predictive alerts (NEW)
-    renderPredictiveAlerts(detections, speciesData);
+    try {
+        console.log('🎯 About to call renderPredictiveAlerts');
+        renderPredictiveAlerts(detections, speciesData);
+    } catch (error) {
+        console.error('❌ Error in renderPredictiveAlerts:', error);
+    }
 
     // Personalized recommendations (NEW)
-    renderPersonalizedRecommendations(detections, speciesData);
+    try {
+        console.log('🎯 About to call renderPersonalizedRecommendations');
+        renderPersonalizedRecommendations(detections, speciesData);
+    } catch (error) {
+        console.error('❌ Error in renderPersonalizedRecommendations:', error);
+    }
 
     // Render AI-powered insights
     const container = document.getElementById('insights-list');
@@ -1729,19 +1751,41 @@ export async function renderTrends(analytics, speciesData, detections) {
     console.log('📈 renderTrends called');
 
     // Year-over-Year Comparison
-    renderYearOverYear(detections, speciesData);
+    try {
+        renderYearOverYear(detections, speciesData);
+    } catch (error) {
+        console.error('Error in renderYearOverYear:', error);
+    }
 
     // Species Streaks
-    renderSpeciesStreaks(detections, speciesData);
+    try {
+        renderSpeciesStreaks(detections, speciesData);
+    } catch (error) {
+        console.error('Error in renderSpeciesStreaks:', error);
+    }
 
     // Species Timeline (NEW)
-    renderSpeciesTimeline(detections, speciesData);
+    try {
+        console.log('🎯 About to call renderSpeciesTimeline');
+        renderSpeciesTimeline(detections, speciesData);
+    } catch (error) {
+        console.error('❌ Error in renderSpeciesTimeline:', error);
+    }
 
     // Heatmap Calendar (NEW)
-    renderHeatmapCalendar(detections);
+    try {
+        console.log('🎯 About to call renderHeatmapCalendar');
+        renderHeatmapCalendar(detections);
+    } catch (error) {
+        console.error('❌ Error in renderHeatmapCalendar:', error);
+    }
 
     // Diversity Trends chart
-    renderDiversityTrends(detections, 'daily');
+    try {
+        renderDiversityTrends(detections, 'daily');
+    } catch (error) {
+        console.error('Error in renderDiversityTrends:', error);
+    }
 
     // Enhanced Predictions with weather
     try {
@@ -1769,24 +1813,50 @@ export async function renderAnalytics(analytics, speciesData, detections) {
     console.log('🔬 renderAnalytics called');
 
     // Rarity Scores
-    renderRarityScores(speciesData, detections);
+    try {
+        renderRarityScores(speciesData, detections);
+    } catch (error) {
+        console.error('Error in renderRarityScores:', error);
+    }
 
     // Co-occurrence Analysis
-    renderCoOccurrence(detections);
+    try {
+        renderCoOccurrence(detections);
+    } catch (error) {
+        console.error('Error in renderCoOccurrence:', error);
+    }
 
     // Weather correlation
-    const weatherModule = await import('./weather.js');
-    const weatherCorrelation = weatherModule.correlateWeatherWithActivity(detections);
-    renderWeatherImpact(weatherCorrelation);
+    try {
+        const weatherModule = await import('./weather.js');
+        const weatherCorrelation = weatherModule.correlateWeatherWithActivity(detections);
+        renderWeatherImpact(weatherCorrelation);
+    } catch (error) {
+        console.error('Error in weather correlation:', error);
+    }
 
     // Species comparison (show empty state initially)
-    renderSpeciesComparison(null);
+    try {
+        renderSpeciesComparison(null);
+    } catch (error) {
+        console.error('Error in renderSpeciesComparison:', error);
+    }
 
-    // Bubble chart visualization
-    renderBubbleChart(speciesData, detections);
+    // Bubble chart visualization (NEW)
+    try {
+        console.log('🎯 About to call renderBubbleChart');
+        renderBubbleChart(speciesData, detections);
+    } catch (error) {
+        console.error('❌ Error in renderBubbleChart:', error);
+    }
 
-    // Milestone progress tracking
-    renderMilestones(speciesData, detections);
+    // Milestone progress tracking (NEW)
+    try {
+        console.log('🎯 About to call renderMilestones');
+        renderMilestones(speciesData, detections);
+    } catch (error) {
+        console.error('❌ Error in renderMilestones:', error);
+    }
 }
 
 /**
