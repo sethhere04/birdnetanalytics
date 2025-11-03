@@ -26,27 +26,64 @@
     <link rel="stylesheet" href="css/styles.css?v=2024102907">
 </head>
 <body>
-    <!-- Alerts Button -->
-    <button class="settings-toggle" id="alerts-toggle" aria-label="Open alert settings">
-        <span class="settings-icon">🔔</span>
-        <span class="settings-text">Alerts</span>
-    </button>
-
-    <!-- Settings Button -->
-    <button class="settings-toggle" id="settings-toggle" aria-label="Open settings">
-        <span class="settings-icon">⚙️</span>
-        <span class="settings-text">Settings</span>
-    </button>
-
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>🦜 Backyard Birds Analytics</h1>
-            <p>Personal insights into your bird activity</p>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">🦜 BirdNET</h1>
+            <p class="sidebar-subtitle">Analytics</p>
         </div>
 
-        <!-- Filters and Controls -->
-        <div class="controls-bar">
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-tab="overview">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Overview</span>
+            </button>
+            <button class="nav-item" data-tab="species">
+                <span class="nav-icon">🐦</span>
+                <span class="nav-label">Species</span>
+            </button>
+            <button class="nav-item" data-tab="insights">
+                <span class="nav-icon">💡</span>
+                <span class="nav-label">Insights</span>
+            </button>
+            <button class="nav-item" data-tab="trends">
+                <span class="nav-icon">📈</span>
+                <span class="nav-label">Trends</span>
+            </button>
+            <button class="nav-item" data-tab="analytics">
+                <span class="nav-icon">🔬</span>
+                <span class="nav-label">Analytics</span>
+            </button>
+            <button class="nav-item" data-tab="activity">
+                <span class="nav-icon">⏰</span>
+                <span class="nav-label">Activity</span>
+            </button>
+            <button class="nav-item" data-tab="migration">
+                <span class="nav-icon">🦅</span>
+                <span class="nav-label">Migration</span>
+            </button>
+            <button class="nav-item" data-tab="feeding">
+                <span class="nav-icon">🌻</span>
+                <span class="nav-label">Feeding</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="sidebar-btn" id="alerts-toggle" title="Alert Settings">
+                <span class="nav-icon">🔔</span>
+                <span class="nav-label">Alerts</span>
+            </button>
+            <button class="sidebar-btn" id="settings-toggle" title="Settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
             <div class="filters">
                 <select id="date-range-filter" class="filter-select">
                     <option value="all">All Time</option>
@@ -57,23 +94,14 @@
                 <input type="text" id="species-search" class="filter-input" placeholder="Search species...">
                 <span id="filter-info" class="filter-info" style="display: none;"></span>
             </div>
-            <div class="controls-buttons">
-                <button id="refresh-btn" class="btn-primary" title="Refresh data">🔄 Refresh</button>
-                <button id="export-csv-btn" class="btn-primary">📥 Export CSV</button>
+            <div class="top-bar-actions">
+                <button id="refresh-btn" class="btn-icon" title="Refresh data">🔄</button>
+                <button id="export-csv-btn" class="btn-icon" title="Export CSV">📥</button>
             </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab active" data-tab="overview">Overview</button>
-            <button class="tab" data-tab="species">Species</button>
-            <button class="tab" data-tab="migration">🦅 Migration</button>
-            <button class="tab" data-tab="activity">Activity Patterns</button>
-            <button class="tab" data-tab="feeding">🌻 Feeding</button>
-            <button class="tab" data-tab="insights">💡 Insights</button>
-            <button class="tab" data-tab="trends">📈 Trends</button>
-            <button class="tab" data-tab="analytics">🔬 Analytics</button>
-        </div>
+        <!-- Content Container -->
+        <div class="content-wrapper">
 
         <!-- Overview Tab -->
         <div id="overview-tab" class="tab-content active">
@@ -621,6 +649,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 

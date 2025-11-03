@@ -61,10 +61,10 @@ export async function init() {
  * Set up all event listeners
  */
 function setupEventListeners() {
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabName = tab.dataset.tab;
+    // Navigation item switching
+    document.querySelectorAll('.nav-item').forEach(navItem => {
+        navItem.addEventListener('click', () => {
+            const tabName = navItem.dataset.tab;
             switchTab(tabName);
         });
     });
@@ -392,12 +392,12 @@ function setupTouchGestures() {
         const gestureHandler = new TouchGestureHandler();
         gestureHandler.init();
 
-        // Set up tab swipe navigation
-        const tabButtons = document.querySelectorAll('.tab');
-        if (tabButtons.length > 0) {
-            const tabNavigator = new TabSwipeNavigator(tabButtons, gestureHandler);
+        // Set up navigation swipe
+        const navItems = document.querySelectorAll('.nav-item');
+        if (navItems.length > 0) {
+            const tabNavigator = new TabSwipeNavigator(navItems, gestureHandler);
             tabNavigator.init();
-            console.log('✅ Touch gestures enabled for tab navigation');
+            console.log('✅ Touch gestures enabled for navigation');
         }
     } catch (error) {
         console.error('❌ Failed to initialize touch gestures:', error);
@@ -430,9 +430,9 @@ function renderWatchedSpeciesList() {
  * Switch to a different tab
  */
 function switchTab(tabName) {
-    // Update active tab UI
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelector(`.tab[data-tab="${tabName}"]`)?.classList.add('active');
+    // Update active navigation item UI
+    document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.nav-item[data-tab="${tabName}"]`)?.classList.add('active');
 
     // Update active content
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
