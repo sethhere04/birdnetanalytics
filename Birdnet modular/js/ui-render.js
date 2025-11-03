@@ -1794,9 +1794,21 @@ export async function renderAnalytics(analytics, speciesData, detections) {
  */
 export function renderHeatmapCalendar(detections) {
     const container = document.getElementById('heatmap-calendar-container');
-    if (!container) return;
+    if (!container) {
+        console.warn('Heatmap container not found');
+        return;
+    }
+
+    console.log('Rendering heatmap calendar with', detections.length, 'detections');
+
+    if (!window.analyticsModule || !window.analyticsModule.generateHeatmapData) {
+        console.error('generateHeatmapData not available');
+        container.innerHTML = '<div class="empty-state"><p>Loading...</p></div>';
+        return;
+    }
 
     const heatmapData = window.analyticsModule.generateHeatmapData(detections, 365);
+    console.log('Generated heatmap data:', heatmapData.length, 'days');
 
     if (heatmapData.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>No data available for heatmap</p></div>';
@@ -1856,9 +1868,21 @@ export function renderHeatmapCalendar(detections) {
  */
 export function renderSpeciesTimeline(detections, speciesData) {
     const container = document.getElementById('species-timeline-container');
-    if (!container) return;
+    if (!container) {
+        console.warn('Timeline container not found');
+        return;
+    }
+
+    console.log('Rendering species timeline with', speciesData.length, 'species');
+
+    if (!window.analyticsModule || !window.analyticsModule.generateSpeciesTimeline) {
+        console.error('generateSpeciesTimeline not available');
+        container.innerHTML = '<div class="empty-state"><p>Loading...</p></div>';
+        return;
+    }
 
     const timeline = window.analyticsModule.generateSpeciesTimeline(detections, speciesData);
+    console.log('Generated timeline:', timeline.length, 'species');
 
     if (timeline.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>No timeline data available</p></div>';
@@ -1921,9 +1945,21 @@ function getMonthWidth(startDate, endDate) {
  */
 export function renderBubbleChart(speciesData, detections) {
     const container = document.getElementById('bubble-chart-container');
-    if (!container) return;
+    if (!container) {
+        console.warn('Bubble chart container not found');
+        return;
+    }
+
+    console.log('Rendering bubble chart with', speciesData.length, 'species');
+
+    if (!window.analyticsModule || !window.analyticsModule.generateBubbleChartData) {
+        console.error('generateBubbleChartData not available');
+        container.innerHTML = '<div class="empty-state"><p>Loading...</p></div>';
+        return;
+    }
 
     const bubbleData = window.analyticsModule.generateBubbleChartData(speciesData, detections);
+    console.log('Generated bubble data:', bubbleData.length, 'bubbles');
 
     if (bubbleData.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>No data available for bubble chart</p></div>';
@@ -1969,9 +2005,21 @@ export function renderBubbleChart(speciesData, detections) {
  */
 export function renderPredictiveAlerts(detections, speciesData) {
     const container = document.getElementById('predictive-alerts-container');
-    if (!container) return;
+    if (!container) {
+        console.warn('Predictive alerts container not found');
+        return;
+    }
+
+    console.log('Rendering predictive alerts');
+
+    if (!window.analyticsModule || !window.analyticsModule.generatePredictiveAlerts) {
+        console.error('generatePredictiveAlerts not available');
+        container.innerHTML = '<div class="empty-state"><p>Loading...</p></div>';
+        return;
+    }
 
     const alerts = window.analyticsModule.generatePredictiveAlerts(detections, speciesData);
+    console.log('Generated alerts:', alerts.length);
 
     if (alerts.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>No alerts - all species are on schedule!</p></div>';
@@ -2009,9 +2057,21 @@ export function renderPredictiveAlerts(detections, speciesData) {
  */
 export function renderMilestones(speciesData, detections) {
     const container = document.getElementById('milestones-container');
-    if (!container) return;
+    if (!container) {
+        console.warn('Milestones container not found');
+        return;
+    }
+
+    console.log('Rendering milestones');
+
+    if (!window.analyticsModule || !window.analyticsModule.calculateMilestones) {
+        console.error('calculateMilestones not available');
+        container.innerHTML = '<div class="empty-state"><p>Loading...</p></div>';
+        return;
+    }
 
     const milestones = window.analyticsModule.calculateMilestones(speciesData, detections);
+    console.log('Generated milestones:', milestones.length);
 
     // Separate by type
     const speciesMilestones = milestones.filter(m => m.type === 'species');
@@ -2076,9 +2136,21 @@ export function renderMilestones(speciesData, detections) {
  */
 export function renderPersonalizedRecommendations(detections, speciesData) {
     const container = document.getElementById('recommendations-container');
-    if (!container) return;
+    if (!container) {
+        console.warn('Recommendations container not found');
+        return;
+    }
+
+    console.log('Rendering recommendations');
+
+    if (!window.analyticsModule || !window.analyticsModule.generatePersonalizedRecommendations) {
+        console.error('generatePersonalizedRecommendations not available');
+        container.innerHTML = '<div class="empty-state"><p>Loading...</p></div>';
+        return;
+    }
 
     const recommendations = window.analyticsModule.generatePersonalizedRecommendations(detections, speciesData);
+    console.log('Generated recommendations:', recommendations.length);
 
     if (recommendations.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>No recommendations available yet</p></div>';
