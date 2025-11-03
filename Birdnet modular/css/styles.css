@@ -4091,3 +4091,493 @@ body {
         flex-direction: column;
     }
 }
+
+/* ========================================
+   NEW FEATURES STYLES
+   ======================================== */
+
+/* Heatmap Calendar (GitHub-style) */
+.heatmap-calendar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.heatmap-grid {
+    display: flex;
+    gap: 3px;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+}
+
+.heatmap-week {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.heatmap-day {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.heatmap-day:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 4px rgba(0,0,0,0.3);
+}
+
+.heatmap-day-empty {
+    width: 12px;
+    height: 12px;
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    justify-content: flex-end;
+}
+
+.legend-square {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+/* Species Timeline */
+.timeline-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.timeline-row {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.timeline-row:hover {
+    background-color: var(--bg-secondary);
+}
+
+.timeline-species-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.timeline-species-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.timeline-species-info strong {
+    font-size: 0.9rem;
+}
+
+.timeline-species-info span {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.timeline-bar-container {
+    position: relative;
+    height: 24px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.timeline-bar {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.5rem;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.timeline-start, .timeline-end {
+    background: rgba(0,0,0,0.2);
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+}
+
+/* Bubble Chart */
+.bubble-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bubble-chart-info {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+
+.bubble-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    min-height: 300px;
+}
+
+.bubble {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.bubble:hover {
+    transform: scale(1.1);
+    opacity: 1 !important;
+}
+
+.bubble-label {
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 0.25rem;
+}
+
+.bubble-legend {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+/* Predictive Alerts */
+.alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.predictive-alert-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%);
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+[data-theme="dark"] .predictive-alert-card {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.2) 100%);
+}
+
+.predictive-alert-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.alert-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.alert-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.alert-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert-message {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.alert-details {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+/* Milestones */
+.milestones-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.milestone-section h4 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.milestone-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.milestone-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s;
+}
+
+.milestone-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.milestone-card.achieved {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-color: #10b981;
+}
+
+[data-theme="dark"] .milestone-card.achieved {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.25) 100%);
+}
+
+.milestone-icon {
+    font-size: 2.5rem;
+}
+
+.milestone-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-align: center;
+    color: var(--text-primary);
+}
+
+.milestone-progress {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.5s ease;
+}
+
+.milestone-card.achieved .progress-fill {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.progress-text {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.milestone-remaining {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    text-align: center;
+}
+
+.milestone-achieved-text {
+    font-size: 0.9rem;
+    color: #10b981;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Personalized Recommendations */
+.recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.recommendation-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid;
+    transition: all 0.3s;
+}
+
+.recommendation-card.priority-high {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #f59e0b;
+}
+
+.recommendation-card.priority-medium {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-color: #3b82f6;
+}
+
+.recommendation-card.priority-low {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-color: #6b7280;
+}
+
+[data-theme="dark"] .recommendation-card.priority-high {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.2) 100%);
+}
+
+[data-theme="dark"] .recommendation-card.priority-medium {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.2) 100%);
+}
+
+[data-theme="dark"] .recommendation-card.priority-low {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.1) 0%, rgba(107, 114, 128, 0.2) 100%);
+}
+
+.recommendation-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.rec-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.rec-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.rec-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.rec-message {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.rec-action {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    font-style: italic;
+    padding: 0.5rem;
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+    margin-top: 0.25rem;
+}
+
+[data-theme="dark"] .rec-action {
+    background: rgba(255,255,255,0.05);
+}
+
+.rec-priority-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+.priority-high .rec-priority-badge {
+    background: #f59e0b;
+    color: white;
+}
+
+.priority-medium .rec-priority-badge {
+    background: #3b82f6;
+    color: white;
+}
+
+.priority-low .rec-priority-badge {
+    background: #6b7280;
+    color: white;
+}
+
+/* Mobile Responsiveness for New Features */
+@media (max-width: 768px) {
+    .timeline-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .timeline-species-label {
+        gap: 0.5rem;
+    }
+
+    .timeline-bar {
+        padding: 0 0.25rem;
+        font-size: 0.6rem;
+    }
+
+    .bubble-container {
+        padding: 1rem;
+    }
+
+    .bubble {
+        font-size: 0.65rem;
+    }
+
+    .milestone-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .heatmap-grid {
+        overflow-x: scroll;
+    }
+
+    .recommendation-card {
+        padding: 1rem;
+    }
+
+    .rec-icon {
+        font-size: 1.5rem;
+    }
+
+    .rec-title {
+        font-size: 1rem;
+    }
+
+    .alert-icon {
+        font-size: 1.5rem;
+    }
+}

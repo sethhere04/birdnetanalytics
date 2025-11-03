@@ -535,54 +535,20 @@ export async function renderInsights(analytics, speciesData, detections) {
         detectionsCount: detections?.length || 0
     });
 
-    // NEW: Activity anomalies (today's alerts)
+    // Activity anomalies (today's alerts)
     renderActivityAnomalies(detections, speciesData);
 
-    // NEW: Missing species alerts
+    // Missing species alerts
     renderMissingSpeciesAlerts(speciesData, detections);
 
-    // NEW: Best watch times
+    // Best watch times
     renderBestWatchTimes(detections);
 
-    // NEW: Year-over-year comparison
-    renderYearOverYear(detections, speciesData);
+    // Predictive alerts (NEW)
+    renderPredictiveAlerts(detections, speciesData);
 
-    // NEW: Species streaks
-    renderSpeciesStreaks(detections, speciesData);
-
-    // NEW: Rarity scores
-    renderRarityScores(speciesData, detections);
-
-    // Render diversity trends chart (default to daily view)
-    renderDiversityTrends(detections, 'daily');
-
-    // Render co-occurrence analysis
-    renderCoOccurrence(detections);
-
-    // Weather correlation (async)
-    const weatherModule = await import('./weather.js');
-    const weatherCorrelation = weatherModule.correlateWeatherWithActivity(detections);
-    renderWeatherImpact(weatherCorrelation);
-
-    // Enhanced predictions with weather
-    try {
-        const currentWeather = await weatherModule.getCurrentWeather();
-        const forecast = await weatherModule.getWeatherForecast();
-        const analyticsModule = window.analyticsModule;
-        const predictions = analyticsModule.predictActivityWithWeather(detections, {
-            current: currentWeather,
-            forecast: forecast
-        });
-        renderEnhancedPredictions(predictions);
-    } catch (error) {
-        console.log('Weather forecast unavailable, showing basic predictions');
-        const analyticsModule = window.analyticsModule;
-        const predictions = analyticsModule.predictPeakActivity(detections, 7);
-        renderEnhancedPredictions(predictions);
-    }
-
-    // Species comparison (show empty state initially)
-    renderSpeciesComparison(null);
+    // Personalized recommendations (NEW)
+    renderPersonalizedRecommendations(detections, speciesData);
 
     // Render AI-powered insights
     const container = document.getElementById('insights-list');
@@ -1768,6 +1734,12 @@ export async function renderTrends(analytics, speciesData, detections) {
     // Species Streaks
     renderSpeciesStreaks(detections, speciesData);
 
+    // Species Timeline (NEW)
+    renderSpeciesTimeline(detections, speciesData);
+
+    // Heatmap Calendar (NEW)
+    renderHeatmapCalendar(detections);
+
     // Diversity Trends chart
     renderDiversityTrends(detections, 'daily');
 
@@ -1809,4 +1781,332 @@ export async function renderAnalytics(analytics, speciesData, detections) {
 
     // Species comparison (show empty state initially)
     renderSpeciesComparison(null);
+
+    // Bubble chart visualization
+    renderBubbleChart(speciesData, detections);
+
+    // Milestone progress tracking
+    renderMilestones(speciesData, detections);
+}
+
+/**
+ * Render heatmap calendar (GitHub-style contribution calendar)
+ */
+export function renderHeatmapCalendar(detections) {
+    const container = document.getElementById('heatmap-calendar-container');
+    if (!container) return;
+
+    const heatmapData = window.analyticsModule.generateHeatmapData(detections, 365);
+
+    if (heatmapData.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No data available for heatmap</p></div>';
+        return;
+    }
+
+    // Group by week
+    const weeks = new Map();
+    heatmapData.forEach(day => {
+        if (!weeks.has(day.weekOfYear)) {
+            weeks.set(day.weekOfYear, []);
+        }
+        weeks.get(day.weekOfYear).push(day);
+    });
+
+    const intensityColors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
+
+    let html = '<div class="heatmap-calendar">';
+    html += '<div class="heatmap-months"></div>'; // Month labels
+    html += '<div class="heatmap-grid">';
+
+    // Render weeks
+    weeks.forEach((days, weekNum) => {
+        html += '<div class="heatmap-week">';
+        for (let dow = 0; dow < 7; dow++) {
+            const day = days.find(d => d.dayOfWeek === dow);
+            if (day) {
+                const color = intensityColors[day.intensity];
+                html += `<div class="heatmap-day"
+                    style="background-color: ${color}"
+                    title="${day.dateString}: ${day.count} detections"
+                    data-count="${day.count}"
+                    data-date="${day.dateString}">
+                </div>`;
+            } else {
+                html += '<div class="heatmap-day-empty"></div>';
+            }
+        }
+        html += '</div>';
+    });
+
+    html += '</div>'; // heatmap-grid
+    html += '<div class="heatmap-legend">';
+    html += '<span>Less</span>';
+    intensityColors.forEach((color, i) => {
+        html += `<div class="legend-square" style="background-color: ${color}"></div>`;
+    });
+    html += '<span>More</span>';
+    html += '</div>';
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+/**
+ * Render species timeline
+ */
+export function renderSpeciesTimeline(detections, speciesData) {
+    const container = document.getElementById('species-timeline-container');
+    if (!container) return;
+
+    const timeline = window.analyticsModule.generateSpeciesTimeline(detections, speciesData);
+
+    if (timeline.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No timeline data available</p></div>';
+        return;
+    }
+
+    // Show top 20 species by total detections
+    const topSpecies = timeline
+        .sort((a, b) => b.totalDetections - a.totalDetections)
+        .slice(0, 20);
+
+    let html = '<div class="timeline-chart">';
+
+    topSpecies.forEach(item => {
+        const imageUrl = getSpeciesImageUrl(item.species);
+        const startMonth = item.firstSeen.toLocaleDateString('en-US', { month: 'short' });
+        const endMonth = item.lastSeen.toLocaleDateString('en-US', { month: 'short' });
+
+        html += `
+            <div class="timeline-row">
+                <div class="timeline-species-label">
+                    <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                        ${!imageUrl ? '🐦' : ''}
+                    </div>
+                    <div class="timeline-species-info">
+                        <strong>${item.species}</strong>
+                        <span>${item.totalDetections} detections</span>
+                    </div>
+                </div>
+                <div class="timeline-bar-container">
+                    <div class="timeline-bar" style="left: ${getMonthOffset(item.firstSeen)}%; width: ${getMonthWidth(item.firstSeen, item.lastSeen)}%">
+                        <span class="timeline-start">${startMonth}</span>
+                        <span class="timeline-end">${endMonth}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Helper functions for timeline
+function getMonthOffset(date) {
+    const start = new Date(new Date().getFullYear(), 0, 1);
+    const diffTime = date - start;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return (diffDays / 365) * 100;
+}
+
+function getMonthWidth(startDate, endDate) {
+    const diffTime = endDate - startDate;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max((diffDays / 365) * 100, 2); // Minimum 2% width
+}
+
+/**
+ * Render bubble chart
+ */
+export function renderBubbleChart(speciesData, detections) {
+    const container = document.getElementById('bubble-chart-container');
+    if (!container) return;
+
+    const bubbleData = window.analyticsModule.generateBubbleChartData(speciesData, detections);
+
+    if (bubbleData.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No data available for bubble chart</p></div>';
+        return;
+    }
+
+    // Show top 30 species
+    const topBubbles = bubbleData
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 30);
+
+    let html = '<div class="bubble-chart">';
+    html += '<div class="bubble-chart-info">Size = Rarity Score, Color = Confidence</div>';
+    html += '<div class="bubble-container">';
+
+    topBubbles.forEach((bubble, index) => {
+        const size = Math.max(30, Math.min(100, bubble.size)); // Scale size 30-100px
+        const confidenceColor = bubble.y >= 80 ? '#10b981' : bubble.y >= 60 ? '#3b82f6' : '#f59e0b';
+
+        html += `
+            <div class="bubble"
+                style="width: ${size}px; height: ${size}px; background-color: ${confidenceColor}; opacity: 0.7;"
+                title="${bubble.species}: ${bubble.count} detections, ${bubble.y.toFixed(1)}% confidence, ${bubble.size} rarity"
+                onclick="window.showSpeciesDetail('${bubble.species.replace(/'/g, "\\'")}')">
+                <div class="bubble-label">${bubble.species.split(' ')[0]}</div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    html += '<div class="bubble-legend">';
+    html += '<span style="color: #10b981">■</span> High Confidence (80%+) ';
+    html += '<span style="color: #3b82f6">■</span> Medium (60-80%) ';
+    html += '<span style="color: #f59e0b">■</span> Lower (<60%)';
+    html += '</div>';
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+/**
+ * Render predictive alerts
+ */
+export function renderPredictiveAlerts(detections, speciesData) {
+    const container = document.getElementById('predictive-alerts-container');
+    if (!container) return;
+
+    const alerts = window.analyticsModule.generatePredictiveAlerts(detections, speciesData);
+
+    if (alerts.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No alerts - all species are on schedule!</p></div>';
+        return;
+    }
+
+    let html = '<div class="alerts-list">';
+
+    alerts.slice(0, 10).forEach(alert => {
+        const imageUrl = getSpeciesImageUrl(alert.species);
+
+        html += `
+            <div class="predictive-alert-card">
+                <div class="alert-icon">${alert.icon}</div>
+                <div class="alert-content">
+                    <div class="alert-header">
+                        <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                            ${!imageUrl ? '🐦' : ''}
+                        </div>
+                        <strong>${alert.species}</strong>
+                    </div>
+                    <div class="alert-message">${alert.message}</div>
+                    <div class="alert-details">Usually appears: ${alert.expectedTime} · ${alert.minutesLate} minutes late</div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+/**
+ * Render milestone progress tracking
+ */
+export function renderMilestones(speciesData, detections) {
+    const container = document.getElementById('milestones-container');
+    if (!container) return;
+
+    const milestones = window.analyticsModule.calculateMilestones(speciesData, detections);
+
+    // Separate by type
+    const speciesMilestones = milestones.filter(m => m.type === 'species');
+    const detectionMilestones = milestones.filter(m => m.type === 'detections');
+
+    let html = '<div class="milestones-grid">';
+
+    // Species Milestones
+    html += '<div class="milestone-section">';
+    html += '<h4>🎯 Species Milestones</h4>';
+    html += '<div class="milestone-cards">';
+
+    speciesMilestones.forEach(milestone => {
+        const achievedClass = milestone.achieved ? 'achieved' : '';
+        html += `
+            <div class="milestone-card ${achievedClass}">
+                <div class="milestone-icon">${milestone.icon}</div>
+                <div class="milestone-title">${milestone.title}</div>
+                <div class="milestone-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${milestone.progress}%"></div>
+                    </div>
+                    <div class="progress-text">${milestone.current} / ${milestone.target}</div>
+                </div>
+                ${!milestone.achieved ? `<div class="milestone-remaining">${milestone.remaining} to go</div>` : '<div class="milestone-achieved-text">✅ Completed!</div>'}
+            </div>
+        `;
+    });
+
+    html += '</div></div>'; // milestone-cards, milestone-section
+
+    // Detection Milestones
+    html += '<div class="milestone-section">';
+    html += '<h4>📊 Detection Milestones</h4>';
+    html += '<div class="milestone-cards">';
+
+    detectionMilestones.forEach(milestone => {
+        const achievedClass = milestone.achieved ? 'achieved' : '';
+        html += `
+            <div class="milestone-card ${achievedClass}">
+                <div class="milestone-icon">${milestone.icon}</div>
+                <div class="milestone-title">${milestone.title}</div>
+                <div class="milestone-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${milestone.progress}%"></div>
+                    </div>
+                    <div class="progress-text">${milestone.current.toLocaleString()} / ${milestone.target.toLocaleString()}</div>
+                </div>
+                ${!milestone.achieved ? `<div class="milestone-remaining">${milestone.remaining.toLocaleString()} to go</div>` : '<div class="milestone-achieved-text">✅ Completed!</div>'}
+            </div>
+        `;
+    });
+
+    html += '</div></div>'; // milestone-cards, milestone-section
+    html += '</div>'; // milestones-grid
+
+    container.innerHTML = html;
+}
+
+/**
+ * Render personalized recommendations
+ */
+export function renderPersonalizedRecommendations(detections, speciesData) {
+    const container = document.getElementById('recommendations-container');
+    if (!container) return;
+
+    const recommendations = window.analyticsModule.generatePersonalizedRecommendations(detections, speciesData);
+
+    if (recommendations.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No recommendations available yet</p></div>';
+        return;
+    }
+
+    // Sort by priority
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    recommendations.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+    let html = '<div class="recommendations-list">';
+
+    recommendations.forEach(rec => {
+        const priorityClass = `priority-${rec.priority}`;
+
+        html += `
+            <div class="recommendation-card ${priorityClass}">
+                <div class="rec-icon">${rec.icon}</div>
+                <div class="rec-content">
+                    <div class="rec-title">${rec.title}</div>
+                    <div class="rec-message">${rec.message}</div>
+                    ${rec.action ? `<div class="rec-action">💡 ${rec.action}</div>` : ''}
+                </div>
+                <div class="rec-priority-badge">${rec.priority}</div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
 }

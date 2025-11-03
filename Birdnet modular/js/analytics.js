@@ -1540,3 +1540,306 @@ export function predictBestWatchTimes(detections) {
         weekly: recommendations
     };
 }
+
+/**
+ * Generate heatmap calendar data
+ * GitHub-style contribution calendar showing bird activity
+ */
+export function generateHeatmapData(detections, days = 365) {
+    const heatmapData = [];
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Create map of dates to detection counts
+    const dateCounts = new Map();
+    detections.forEach(d => {
+        const date = parseDetectionDate(d);
+        if (!date || isNaN(date.getTime())) return;
+
+        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        dateCounts.set(dateKey, (dateCounts.get(dateKey) || 0) + 1);
+    });
+
+    // Generate array of all dates with counts
+    for (let i = 0; i < days; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        const dateKey = currentDate.toISOString().split('T')[0];
+
+        heatmapData.push({
+            date: new Date(currentDate),
+            dateString: dateKey,
+            count: dateCounts.get(dateKey) || 0,
+            dayOfWeek: currentDate.getDay(),
+            weekOfYear: getWeekNumber(currentDate)
+        });
+    }
+
+    // Calculate intensity levels (0-4 like GitHub)
+    const counts = heatmapData.map(d => d.count).filter(c => c > 0);
+    const maxCount = Math.max(...counts, 1);
+    const quartile = maxCount / 4;
+
+    heatmapData.forEach(day => {
+        if (day.count === 0) day.intensity = 0;
+        else if (day.count <= quartile) day.intensity = 1;
+        else if (day.count <= quartile * 2) day.intensity = 2;
+        else if (day.count <= quartile * 3) day.intensity = 3;
+        else day.intensity = 4;
+    });
+
+    return heatmapData;
+}
+
+function getWeekNumber(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+/**
+ * Generate species timeline data
+ * Shows when each species was detected throughout the year
+ */
+export function generateSpeciesTimeline(detections, speciesData) {
+    const timeline = [];
+
+    speciesData.forEach(species => {
+        const speciesName = species.commonName || species.common_name || species.scientificName;
+
+        // Get all detection dates for this species
+        const dates = detections
+            .filter(d => (d.commonName || d.common_name || d.scientificName) === speciesName)
+            .map(d => parseDetectionDate(d))
+            .filter(d => d && !isNaN(d.getTime()))
+            .sort((a, b) => a - b);
+
+        if (dates.length === 0) return;
+
+        timeline.push({
+            species: speciesName,
+            firstSeen: dates[0],
+            lastSeen: dates[dates.length - 1],
+            totalDetections: dates.length,
+            dates: dates,
+            daysActive: new Set(dates.map(d => d.toISOString().split('T')[0])).size
+        });
+    });
+
+    return timeline.sort((a, b) => a.firstSeen - b.firstSeen);
+}
+
+/**
+ * Generate bubble chart data
+ * Species plotted by multiple dimensions (count, confidence, rarity)
+ */
+export function generateBubbleChartData(speciesData, detections) {
+    const rarityScores = calculateRarityScores(speciesData, detections);
+    const rarityMap = new Map(rarityScores.map(r => [r.species, r.rarityScore]));
+
+    return speciesData.map(species => {
+        const speciesName = species.commonName || species.common_name || species.scientificName;
+        const count = species.detections || species.count || 0;
+        const avgConfidence = species.avgConfidence || species.avg_confidence || 0;
+        const rarity = rarityMap.get(speciesName) || 50;
+
+        return {
+            species: speciesName,
+            x: count, // X-axis: detection count
+            y: avgConfidence * 100, // Y-axis: avg confidence
+            size: rarity, // Bubble size: rarity score
+            count: count,
+            confidence: avgConfidence,
+            rarity: rarity
+        };
+    }).filter(d => d.count > 0);
+}
+
+/**
+ * Generate predictive alerts
+ * Alert when species haven't shown up at their expected time
+ */
+export function generatePredictiveAlerts(detections, speciesData) {
+    const alerts = [];
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    speciesData.forEach(species => {
+        const speciesName = species.commonName || species.common_name || species.scientificName;
+
+        // Get detection times for this species
+        const detectionTimes = detections
+            .filter(d => (d.commonName || d.common_name || d.scientificName) === speciesName)
+            .map(d => {
+                const date = parseDetectionDate(d);
+                return date ? date.getHours() * 60 + date.getMinutes() : null;
+            })
+            .filter(t => t !== null);
+
+        if (detectionTimes.length < 5) return; // Need enough data
+
+        // Calculate average detection time
+        const avgTime = detectionTimes.reduce((sum, t) => sum + t, 0) / detectionTimes.length;
+        const avgHour = Math.floor(avgTime / 60);
+        const avgMinute = Math.round(avgTime % 60);
+
+        // Check if species usually appears by now but hasn't today
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const hasAppearedToday = detections.some(d => {
+            const date = parseDetectionDate(d);
+            return date >= todayStart &&
+                   (d.commonName || d.common_name || d.scientificName) === speciesName;
+        });
+
+        // Alert if we're 30+ minutes past usual time and haven't seen species
+        if (currentMinutes > avgTime + 30 && !hasAppearedToday) {
+            alerts.push({
+                type: 'late',
+                species: speciesName,
+                expectedTime: `${avgHour.toString().padStart(2, '0')}:${avgMinute.toString().padStart(2, '0')}`,
+                minutesLate: Math.round(currentMinutes - avgTime),
+                message: `${speciesName} usually appears around ${avgHour}:${avgMinute.toString().padStart(2, '0')}, but hasn't shown up yet`,
+                icon: '⏰'
+            });
+        }
+    });
+
+    return alerts;
+}
+
+/**
+ * Classify behavior based on time and patterns
+ */
+export function classifyBehavior(detection) {
+    const date = parseDetectionDate(detection);
+    if (!date) return 'unknown';
+
+    const hour = date.getHours();
+    const confidence = detection.confidence || 0;
+
+    // Time-based classification
+    if (hour >= 5 && hour <= 7) {
+        return 'dawn-chorus'; // Early morning singing
+    } else if (hour >= 7 && hour <= 10) {
+        return 'morning-feeding'; // Peak feeding time
+    } else if (hour >= 10 && hour <= 16) {
+        return 'midday-activity'; // Daytime activity
+    } else if (hour >= 16 && hour <= 19) {
+        return 'evening-feeding'; // Evening feeding
+    } else if (hour >= 19 || hour <= 5) {
+        return 'night-activity'; // Nocturnal
+    }
+
+    return 'general-activity';
+}
+
+/**
+ * Generate personalized recommendations
+ */
+export function generatePersonalizedRecommendations(detections, speciesData) {
+    const recommendations = [];
+
+    // Analyze current patterns
+    const watchTimes = predictBestWatchTimes(detections);
+    const missingAlerts = getMissingSpeciesAlerts(speciesData, detections);
+    const predictiveAlerts = generatePredictiveAlerts(detections, speciesData);
+
+    // Best time recommendation
+    if (watchTimes.today && watchTimes.today.bestTimes.length > 0) {
+        const bestTime = watchTimes.today.bestTimes[0];
+        recommendations.push({
+            type: 'timing',
+            priority: 'high',
+            title: 'Optimal Watching Time',
+            message: `Based on your data, ${bestTime.time} is your best time today (${bestTime.activity} avg detections)`,
+            icon: '⏰',
+            action: 'Set up near your feeder during this time'
+        });
+    }
+
+    // Missing species recommendation
+    if (missingAlerts.length > 0) {
+        const topMissing = missingAlerts[0];
+        recommendations.push({
+            type: 'species-missing',
+            priority: 'medium',
+            title: 'Check on Regular Visitor',
+            message: `${topMissing.species} is ${topMissing.daysOverdue} days overdue`,
+            icon: '❓',
+            action: 'Check feeder conditions - food fresh? Water available?'
+        });
+    }
+
+    // Behavioral recommendation
+    const dawnDetections = detections.filter(d => {
+        const date = parseDetectionDate(d);
+        return date && date.getHours() >= 5 && date.getHours() <= 7;
+    }).length;
+
+    const totalDetections = detections.length;
+    const dawnPercentage = (dawnDetections / totalDetections) * 100;
+
+    if (dawnPercentage < 20) {
+        recommendations.push({
+            type: 'behavior',
+            priority: 'low',
+            title: 'Try Dawn Watching',
+            message: `Only ${dawnPercentage.toFixed(0)}% of detections are at dawn - the most active time!`,
+            icon: '🌅',
+            action: 'Set up before sunrise to catch the dawn chorus'
+        });
+    }
+
+    return recommendations;
+}
+
+/**
+ * Calculate milestone progress
+ */
+export function calculateMilestones(speciesData, detections) {
+    const milestones = [];
+    const totalSpecies = speciesData.length;
+    const totalDetections = detections.length;
+
+    // Species milestones
+    const speciesMilestones = [10, 25, 50, 100, 150, 200];
+    speciesMilestones.forEach(target => {
+        const progress = (totalSpecies / target) * 100;
+        const achieved = totalSpecies >= target;
+
+        milestones.push({
+            type: 'species',
+            target: target,
+            current: totalSpecies,
+            progress: Math.min(progress, 100),
+            achieved: achieved,
+            title: `${target} Species`,
+            icon: achieved ? '✅' : '🎯',
+            remaining: Math.max(0, target - totalSpecies)
+        });
+    });
+
+    // Detection milestones
+    const detectionMilestones = [100, 500, 1000, 5000, 10000];
+    detectionMilestones.forEach(target => {
+        const progress = (totalDetections / target) * 100;
+        const achieved = totalDetections >= target;
+
+        milestones.push({
+            type: 'detections',
+            target: target,
+            current: totalDetections,
+            progress: Math.min(progress, 100),
+            achieved: achieved,
+            title: `${target.toLocaleString()} Detections`,
+            icon: achieved ? '✅' : '📊',
+            remaining: Math.max(0, target - totalDetections)
+        });
+    });
+
+    return milestones;
+}
