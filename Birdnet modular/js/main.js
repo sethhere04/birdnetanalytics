@@ -7,6 +7,7 @@ import * as Analytics from './analytics.js';
 import * as UIRender from './ui-render.js';
 import * as AudioPlayer from './audio-player.js';
 import * as Alerts from './alerts.js';
+import { TouchGestureHandler, TabSwipeNavigator } from './touch-gestures.js';
 
 console.log('🚀 Main module loaded v2024103102 - starting BirdAnalytics initialization');
 
@@ -43,6 +44,9 @@ export async function init() {
 
     // Set up event listeners
     setupEventListeners();
+
+    // Initialize touch gestures for mobile
+    setupTouchGestures();
 
     // Load initial data
     await loadData();
@@ -377,6 +381,27 @@ function setupEventListeners() {
             btn.setAttribute('aria-expanded', 'false');
         }
     };
+}
+
+/**
+ * Set up touch gestures for mobile navigation
+ */
+function setupTouchGestures() {
+    try {
+        // Initialize gesture handler
+        const gestureHandler = new TouchGestureHandler();
+        gestureHandler.init();
+
+        // Set up tab swipe navigation
+        const tabButtons = document.querySelectorAll('.tab');
+        if (tabButtons.length > 0) {
+            const tabNavigator = new TabSwipeNavigator(tabButtons, gestureHandler);
+            tabNavigator.init();
+            console.log('✅ Touch gestures enabled for tab navigation');
+        }
+    } catch (error) {
+        console.error('❌ Failed to initialize touch gestures:', error);
+    }
 }
 
 /**

@@ -4581,3 +4581,76 @@ body {
         font-size: 1.5rem;
     }
 }
+
+/* Swipe Gesture Indicator */
+.swipe-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: rgba(102, 126, 234, 0.9);
+    color: white;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    z-index: 10000;
+    pointer-events: none;
+    animation: swipeFeedback 0.3s ease-out;
+}
+
+@keyframes swipeFeedback {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+}
+
+.swipe-indicator.swipe-left {
+    animation: swipeLeft 0.3s ease-out;
+}
+
+.swipe-indicator.swipe-right {
+    animation: swipeRight 0.3s ease-out;
+}
+
+@keyframes swipeLeft {
+    0% {
+        transform: translate(-50%, -50%) translateX(30px) scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) translateX(0) scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) translateX(-10px) scale(1);
+        opacity: 0;
+    }
+}
+
+@keyframes swipeRight {
+    0% {
+        transform: translate(-50%, -50%) translateX(-30px) scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) translateX(0) scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) translateX(10px) scale(1);
+        opacity: 0;
+    }
+}
