@@ -220,8 +220,8 @@ function setupDetectionTableFilters(detections, speciesData) {
         btn.parentNode.replaceChild(newBtn, btn);
 
         newBtn.addEventListener('click', () => {
-            // Update active state
-            filterButtons.forEach(b => b.classList.remove('active'));
+            // Update active state - query fresh to get current DOM buttons
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             newBtn.classList.add('active');
 
             // Get limit and re-render
