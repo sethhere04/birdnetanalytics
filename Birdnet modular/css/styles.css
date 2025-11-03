@@ -4534,6 +4534,63 @@ body {
     color: white;
 }
 
+/* Compact Dashboard Layout */
+.compact-card {
+    margin-bottom: 0.75rem;
+}
+
+.compact-content {
+    padding: 0.5rem;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.compact-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.compact-content::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 3px;
+}
+
+.compact-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.compact-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-light);
+}
+
+.subsection {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.subsection:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.subsection-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-container-small {
+    position: relative;
+    height: 200px;
+    margin: 0.5rem 0;
+}
+
 /* Mobile Responsiveness for New Features */
 @media (max-width: 768px) {
     .timeline-row {
@@ -4580,6 +4637,14 @@ body {
 
     .alert-icon {
         font-size: 1.5rem;
+    }
+
+    .compact-content {
+        max-height: none;
+    }
+
+    .col-4 {
+        grid-column: span 12;
     }
 }
 

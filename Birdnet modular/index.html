@@ -391,78 +391,64 @@
         <!-- Insights Tab (Daily/Actionable) -->
         <div id="insights-tab" class="tab-content">
             <div class="grid">
-                <!-- Activity Anomalies -->
-                <div class="col-12">
-                    <div class="card">
+                <!-- Left Column: Alerts & Anomalies -->
+                <div class="col-6">
+                    <!-- Activity Anomalies -->
+                    <div class="card compact-card">
                         <div class="card-header">
                             <div class="card-title">⚡ Activity Anomalies</div>
-                            <div class="card-subtitle">Unusual patterns detected today</div>
                         </div>
-                        <div id="activity-anomalies-container" style="padding: 1rem;">
+                        <div id="activity-anomalies-container" class="compact-content">
                             <!-- Populated by JavaScript -->
                         </div>
                     </div>
-                </div>
 
-                <!-- Missing Species Alerts -->
-                <div class="col-6">
-                    <div class="card">
+                    <!-- Missing Species & Predictive Alerts Combined -->
+                    <div class="card compact-card">
                         <div class="card-header">
-                            <div class="card-title">❓ Missing Regulars</div>
-                            <div class="card-subtitle">Species overdue for a visit</div>
+                            <div class="card-title">⏰ Species Status</div>
                         </div>
-                        <div id="missing-species-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
+                        <div class="compact-content">
+                            <div class="subsection">
+                                <h4 class="subsection-title">Missing Regulars</h4>
+                                <div id="missing-species-container"></div>
+                            </div>
+                            <div class="subsection">
+                                <h4 class="subsection-title">Late Arrivals</h4>
+                                <div id="predictive-alerts-container"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Best Watch Times -->
+                <!-- Right Column: Recommendations & Timing -->
                 <div class="col-6">
-                    <div class="card">
+                    <!-- Best Watch Times -->
+                    <div class="card compact-card">
                         <div class="card-header">
                             <div class="card-title">⏰ Best Watch Times</div>
-                            <div class="card-subtitle">When to expect peak activity</div>
                         </div>
-                        <div id="best-watch-times-container" style="padding: 1rem;">
+                        <div id="best-watch-times-container" class="compact-content">
                             <!-- Populated by JavaScript -->
                         </div>
                     </div>
-                </div>
 
-                <!-- Predictive Alerts (NEW) -->
-                <div class="col-6">
-                    <div class="card">
+                    <!-- Personalized Recommendations -->
+                    <div class="card compact-card">
                         <div class="card-header">
-                            <div class="card-title">⏰ Species Alerts</div>
-                            <div class="card-subtitle">Species that haven't shown up on time</div>
+                            <div class="card-title">💡 Recommendations</div>
                         </div>
-                        <div id="predictive-alerts-container" style="padding: 1rem;">
+                        <div id="recommendations-container" class="compact-content">
                             <!-- Populated by JavaScript -->
                         </div>
                     </div>
-                </div>
 
-                <!-- Personalized Recommendations (NEW) -->
-                <div class="col-12">
-                    <div class="card">
+                    <!-- AI-Powered Insights -->
+                    <div class="card compact-card">
                         <div class="card-header">
-                            <div class="card-title">💡 Personalized Recommendations</div>
-                            <div class="card-subtitle">AI-powered suggestions for better bird watching</div>
+                            <div class="card-title">🤖 AI Insights</div>
                         </div>
-                        <div id="recommendations-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI-Powered Insights -->
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">💡 AI-Powered Insights</div>
-                        </div>
-                        <div id="insights-list" style="display: grid; gap: 1rem; padding: 1rem;">
+                        <div id="insights-list" class="compact-content">
                             <div class="loading">
                                 <div class="spinner"></div>
                                 <p>Generating insights...</p>
@@ -476,83 +462,65 @@
         <!-- Trends Tab (Historical Patterns) -->
         <div id="trends-tab" class="tab-content">
             <div class="grid">
-                <!-- Year-over-Year Comparison -->
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">📊 Year-over-Year Comparison</div>
-                            <div class="card-subtitle">How does this year compare to last?</div>
-                        </div>
-                        <div id="year-over-year-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Species Streaks -->
+                <!-- Top Row: Visualizations -->
                 <div class="col-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🔥 Species Streaks</div>
-                            <div class="card-subtitle">Consecutive day appearances</div>
-                        </div>
-                        <div id="species-streaks-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Enhanced Predictions -->
-                <div class="col-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🔮 7-Day Activity Forecast</div>
-                            <div class="card-subtitle">Predicted peak activity times</div>
-                        </div>
-                        <div id="enhanced-predictions-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Species Timeline (NEW) -->
-                <div class="col-12">
-                    <div class="card">
+                    <div class="card compact-card">
                         <div class="card-header">
                             <div class="card-title">📅 Species Timeline</div>
-                            <div class="card-subtitle">When each species appeared throughout the year</div>
                         </div>
-                        <div id="species-timeline-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
+                        <div id="species-timeline-container" class="compact-content"></div>
                     </div>
                 </div>
 
-                <!-- Heatmap Calendar (NEW) -->
-                <div class="col-12">
-                    <div class="card">
+                <div class="col-6">
+                    <div class="card compact-card">
                         <div class="card-header">
-                            <div class="card-title">📊 Activity Heatmap Calendar</div>
-                            <div class="card-subtitle">GitHub-style contribution calendar of bird activity</div>
+                            <div class="card-title">📊 Activity Heatmap</div>
                         </div>
-                        <div id="heatmap-calendar-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
+                        <div id="heatmap-calendar-container" class="compact-content"></div>
                     </div>
                 </div>
 
-                <!-- Diversity Trends Over Time -->
-                <div class="col-12">
-                    <div class="card">
+                <!-- Middle Row: Stats & Predictions -->
+                <div class="col-4">
+                    <div class="card compact-card">
                         <div class="card-header">
-                            <div class="card-title">📈 Diversity Trends Over Time</div>
+                            <div class="card-title">📊 Year-over-Year</div>
+                        </div>
+                        <div id="year-over-year-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🔥 Streaks</div>
+                        </div>
+                        <div id="species-streaks-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🔮 7-Day Forecast</div>
+                        </div>
+                        <div id="enhanced-predictions-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Diversity Chart -->
+                <div class="col-12">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">📈 Diversity Trends</div>
                             <select id="diversity-period-select" class="filter-select" style="width: auto;">
                                 <option value="daily">Last 30 Days</option>
                                 <option value="weekly">Last 12 Weeks</option>
                                 <option value="monthly">Last 12 Months</option>
                             </select>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container-small">
                             <canvas id="diversity-trends-chart"></canvas>
                         </div>
                     </div>
@@ -563,78 +531,55 @@
         <!-- Analytics Tab (Deep Dive) -->
         <div id="analytics-tab" class="tab-content">
             <div class="grid">
-                <!-- Rarity Scores -->
-                <div class="col-6">
-                    <div class="card">
+                <!-- Top Row: Three Column Layout -->
+                <div class="col-4">
+                    <div class="card compact-card">
                         <div class="card-header">
                             <div class="card-title">💎 Rarity Scores</div>
-                            <div class="card-subtitle">How rare are your visitors?</div>
                         </div>
-                        <div id="rarity-scores-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
+                        <div id="rarity-scores-container" class="compact-content"></div>
                     </div>
-                </div>
 
-                <!-- Weather Impact Widget -->
-                <div class="col-6">
-                    <div id="weather-impact-widget">
-                        <!-- Populated by JavaScript -->
-                    </div>
-                </div>
-
-                <!-- Species Co-occurrence Analysis -->
-                <div class="col-12">
-                    <div class="card">
+                    <div class="card compact-card">
                         <div class="card-header">
-                            <div class="card-title">🔗 Species Co-occurrence Analysis</div>
-                            <div class="card-subtitle">Which species appear together?</div>
+                            <div class="card-title">🏆 Milestones</div>
                         </div>
-                        <div id="cooccurrence-container" style="padding: 1rem;">
+                        <div id="milestones-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🔗 Co-occurrence</div>
+                        </div>
+                        <div id="cooccurrence-container" class="compact-content">
                             <div class="loading">
                                 <div class="spinner"></div>
-                                <p>Analyzing species patterns...</p>
+                                <p>Analyzing...</p>
                             </div>
                         </div>
                     </div>
+
+                    <div id="weather-impact-widget"></div>
                 </div>
 
-                <!-- Species Comparison -->
-                <div class="col-12">
-                    <div class="card">
+                <div class="col-4">
+                    <div class="card compact-card">
                         <div class="card-header">
-                            <div class="card-title">🆚 Species Comparison Tool</div>
-                            <div class="card-subtitle">Compare multiple species side by side</div>
+                            <div class="card-title">🎈 Bubble Chart</div>
                         </div>
-                        <div id="species-comparison-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
+                        <div id="bubble-chart-container" class="compact-content" style="min-height: 300px;"></div>
                     </div>
                 </div>
 
-                <!-- Bubble Chart (NEW) -->
+                <!-- Bottom Row: Comparison Tool -->
                 <div class="col-12">
-                    <div class="card">
+                    <div class="card compact-card">
                         <div class="card-header">
-                            <div class="card-title">🎈 Species Bubble Chart</div>
-                            <div class="card-subtitle">Multi-dimensional visualization of species data</div>
+                            <div class="card-title">🆚 Species Comparison</div>
                         </div>
-                        <div id="bubble-chart-container" style="padding: 1rem; min-height: 400px;">
-                            <!-- Populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Milestones (NEW) -->
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🏆 Milestones & Progress</div>
-                            <div class="card-subtitle">Track your bird watching achievements</div>
-                        </div>
-                        <div id="milestones-container" style="padding: 1rem;">
-                            <!-- Populated by JavaScript -->
-                        </div>
+                        <div id="species-comparison-container" class="compact-content"></div>
                     </div>
                 </div>
             </div>
