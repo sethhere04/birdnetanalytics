@@ -390,22 +390,54 @@ body {
     opacity: 0.8;
 }
 
-/* Grid Layout */
+/* Grid Layout - Masonry Style */
 .grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 0.75rem;
+    column-count: 3;
+    column-gap: 0.75rem;
     margin-bottom: 0.75rem;
 }
 
-.col-12 { grid-column: span 12; }
-.col-8 { grid-column: span 8; }
-.col-6 { grid-column: span 6; }
-.col-4 { grid-column: span 4; }
-.col-3 { grid-column: span 3; }
+/* Cards in masonry layout */
+.grid > * {
+    break-inside: avoid;
+    margin-bottom: 0.75rem;
+    display: inline-block;
+    width: 100%;
+}
 
-@media (max-width: 1024px) {
-    .col-8, .col-6, .col-4 { grid-column: span 12; }
+/* Column span classes - now control width in masonry */
+.col-12 {
+    column-span: all;
+    width: 100%;
+}
+
+.col-8 {
+    /* Will flow naturally in masonry */
+}
+
+.col-6 {
+    /* Will flow naturally in masonry */
+}
+
+.col-4 {
+    /* Will flow naturally in masonry */
+}
+
+.col-3 {
+    /* Will flow naturally in masonry */
+}
+
+/* Responsive masonry columns */
+@media (max-width: 1400px) {
+    .grid {
+        column-count: 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .grid {
+        column-count: 1;
+    }
 }
 
 /* Cards */
@@ -415,6 +447,7 @@ body {
     padding: 0.75rem;
     box-shadow: 0 1px 3px var(--shadow);
     border: 1px solid var(--border);
+    display: block;
 }
 
 .card-header {
