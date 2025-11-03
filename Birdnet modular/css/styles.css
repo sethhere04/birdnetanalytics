@@ -459,6 +459,131 @@ body {
     margin-top: 0.2rem;
 }
 
+/* Filter Buttons */
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background: var(--bg-card);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* Table Styles */
+.table-container {
+    overflow-x: auto;
+    margin-top: 0.5rem;
+}
+
+.detections-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.detections-table thead {
+    background: var(--bg);
+    border-bottom: 2px solid var(--border);
+}
+
+.detections-table th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detections-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+}
+
+.detections-table tbody tr:hover {
+    background: var(--bg);
+}
+
+.detections-table td {
+    padding: 0.75rem;
+    color: var(--text);
+}
+
+.detection-species-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.detection-thumbnail {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--bg);
+}
+
+.detection-species-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.detection-species-name {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.detection-scientific-name {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.confidence-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.confidence-high {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.confidence-medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.confidence-low {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
 /* Tabs */
 .tabs {
     display: flex;

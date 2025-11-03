@@ -201,6 +201,46 @@
                     </div>
                 </div>
 
+                <!-- Recent Detections Table -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🕐 Recent Detections</div>
+                                <div class="card-subtitle">Latest bird detections</div>
+                            </div>
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-limit="10">10</button>
+                                <button class="filter-btn" data-limit="25">25</button>
+                                <button class="filter-btn" data-limit="50">50</button>
+                                <button class="filter-btn" data-limit="100">100</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="detections-table" id="recent-detections-table">
+                                <thead>
+                                    <tr>
+                                        <th>Species</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-detections-tbody">
+                                    <tr>
+                                        <td colspan="4">
+                                            <div class="loading">
+                                                <div class="spinner"></div>
+                                                <p>Loading recent detections...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Diversity Metrics (NEW) -->
                 <div class="col-12">
                     <div class="card">

@@ -65,6 +65,9 @@ export function renderOverview(analytics, speciesData, detections) {
     // Today's active species
     renderTodayActiveSpecies(detections, speciesData);
 
+    // Recent detections table
+    renderRecentDetectionsTable(detections, speciesData, 10);
+
     // Hourly pattern chart
     charts.renderHourlyChart(analytics.hourly);
 
@@ -135,6 +138,96 @@ export function renderTodayActiveSpecies(detections, speciesData) {
             </div>
         `;
     }).join('');
+}
+
+/**
+ * Render recent detections table
+ */
+export function renderRecentDetectionsTable(detections, speciesData, limit = 10) {
+    const tbody = document.getElementById('recent-detections-tbody');
+    if (!tbody) return;
+
+    // Sort detections by date (most recent first)
+    const sortedDetections = [...detections].sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateB - dateA;
+    });
+
+    // Get the most recent N detections
+    const recentDetections = sortedDetections.slice(0, limit);
+
+    if (recentDetections.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">🦜</div><p>No detections yet</p></div></td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = recentDetections.map(detection => {
+        const speciesName = detection.commonName || detection.common_name || detection.scientificName;
+        const scientificName = detection.scientificName || detection.scientific_name || '';
+        const confidence = detection.confidence || 0;
+        const thumbnail = getSpeciesImageUrl(speciesName);
+
+        // Parse date and time
+        const detectionDate = new Date(detection.date);
+        const dateStr = detectionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = detectionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+        // Determine confidence level
+        let confidenceClass = 'confidence-low';
+        if (confidence >= 0.8) confidenceClass = 'confidence-high';
+        else if (confidence >= 0.5) confidenceClass = 'confidence-medium';
+
+        return `
+            <tr onclick="window.showSpeciesDetail('${speciesName.replace(/'/g, "\\'")}')">
+                <td>
+                    <div class="detection-species-cell">
+                        ${thumbnail ?
+                            `<img src="${thumbnail}" alt="${speciesName}" class="detection-thumbnail" onerror="this.style.display='none'">` :
+                            `<div class="detection-thumbnail" style="display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🐦</div>`
+                        }
+                        <div class="detection-species-info">
+                            <div class="detection-species-name">${speciesName}</div>
+                            ${scientificName ? `<div class="detection-scientific-name">${scientificName}</div>` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td>${dateStr}</td>
+                <td>${timeStr}</td>
+                <td>
+                    <span class="confidence-badge ${confidenceClass}">
+                        ${(confidence * 100).toFixed(0)}%
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Set up filter button event listeners
+    setupDetectionTableFilters(detections, speciesData);
+}
+
+/**
+ * Set up event listeners for detection table filter buttons
+ */
+function setupDetectionTableFilters(detections, speciesData) {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    filterButtons.forEach(btn => {
+        // Remove old listeners by cloning
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+
+        newBtn.addEventListener('click', () => {
+            // Update active state
+            filterButtons.forEach(b => b.classList.remove('active'));
+            newBtn.classList.add('active');
+
+            // Get limit and re-render
+            const limit = parseInt(newBtn.dataset.limit);
+            renderRecentDetectionsTable(detections, speciesData, limit);
+        });
+    });
 }
 
 /**
