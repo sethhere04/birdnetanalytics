@@ -1,0 +1,2099 @@
+/**
+ * Backyard Birds Analytics - Enhanced Version
+ * API Base: http://192.168.68.129:8080/api/v2/
+ */
+
+console.log('🚀 app.js loaded - starting BirdAnalytics initialization');
+
+const BirdAnalytics = {
+    // Configuration
+    config: {
+        apiBase: 'http://192.168.68.129:8080/api/v2',
+        refreshInterval: 60000, // 1 minute
+        detectionLimit: 10000
+    },
+
+    // Data storage
+    data: {
+        species: [],
+        detections: [],
+        analytics: null,
+        speciesImages: {},
+        migrations: null
+    },
+
+    // Charts
+    charts: {},
+
+    // Filters
+    filters: {
+        dateRange: 'all', // all, today, week, month
+        speciesFilter: ''
+    },
+
+    // Bird Food Preferences Database
+    birdFoodDatabase: {
+        // Cardinals, Grosbeaks, Buntings
+        'Northern Cardinal': { foods: ['Sunflower Seeds', 'Safflower Seeds', 'Cracked Corn', 'Peanuts', 'Millet'], feeder: ['Hopper', 'Platform', 'Tube'], diet: 'Seeds & Insects' },
+        'Rose-breasted Grosbeak': { foods: ['Sunflower Seeds', 'Safflower Seeds', 'Fruit'], feeder: ['Hopper', 'Platform'], diet: 'Seeds & Insects' },
+        'Indigo Bunting': { foods: ['Nyjer Seed', 'Millet', 'Sunflower Chips'], feeder: ['Tube', 'Platform'], diet: 'Seeds & Insects' },
+
+        // Finches
+        'American Goldfinch': { foods: ['Nyjer Seed', 'Sunflower Chips', 'Millet'], feeder: ['Tube', 'Mesh Sock'], diet: 'Seeds' },
+        'House Finch': { foods: ['Sunflower Seeds', 'Nyjer Seed', 'Millet'], feeder: ['Tube', 'Platform'], diet: 'Seeds & Fruit' },
+        'Purple Finch': { foods: ['Sunflower Seeds', 'Nyjer Seed', 'Fruit'], feeder: ['Tube', 'Platform'], diet: 'Seeds & Fruit' },
+
+        // Chickadees & Titmice
+        'Black-capped Chickadee': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet', 'Mealworms'], feeder: ['Tube', 'Suet Cage', 'Hopper'], diet: 'Seeds & Insects' },
+        'Carolina Chickadee': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet', 'Mealworms'], feeder: ['Tube', 'Suet Cage', 'Hopper'], diet: 'Seeds & Insects' },
+        'Tufted Titmouse': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet'], feeder: ['Tube', 'Hopper', 'Suet Cage'], diet: 'Seeds & Insects' },
+
+        // Woodpeckers
+        'Downy Woodpecker': { foods: ['Suet', 'Peanuts', 'Sunflower Seeds', 'Mealworms'], feeder: ['Suet Cage', 'Peanut Feeder'], diet: 'Insects & Suet' },
+        'Hairy Woodpecker': { foods: ['Suet', 'Peanuts', 'Sunflower Seeds'], feeder: ['Suet Cage', 'Peanut Feeder'], diet: 'Insects & Suet' },
+        'Red-bellied Woodpecker': { foods: ['Suet', 'Peanuts', 'Sunflower Seeds', 'Fruit'], feeder: ['Suet Cage', 'Hopper'], diet: 'Insects & Fruit' },
+        'Pileated Woodpecker': { foods: ['Suet', 'Peanuts'], feeder: ['Suet Cage', 'Large Platform'], diet: 'Insects' },
+
+        // Jays & Crows
+        'Blue Jay': { foods: ['Peanuts', 'Sunflower Seeds', 'Corn'], feeder: ['Platform', 'Hopper'], diet: 'Nuts & Seeds' },
+        'American Crow': { foods: ['Peanuts', 'Corn', 'Suet'], feeder: ['Ground', 'Large Platform'], diet: 'Omnivore' },
+
+        // Sparrows
+        'White-throated Sparrow': { foods: ['Millet', 'Cracked Corn', 'Sunflower Chips'], feeder: ['Ground', 'Platform'], diet: 'Seeds' },
+        'Song Sparrow': { foods: ['Millet', 'Sunflower Chips', 'Cracked Corn'], feeder: ['Ground', 'Platform'], diet: 'Seeds & Insects' },
+        'House Sparrow': { foods: ['Millet', 'Sunflower Seeds', 'Cracked Corn'], feeder: ['Platform', 'Hopper'], diet: 'Seeds' },
+        'Chipping Sparrow': { foods: ['Millet', 'Sunflower Chips', 'Nyjer Seed'], feeder: ['Ground', 'Platform'], diet: 'Seeds & Insects' },
+
+        // Nuthatches
+        'White-breasted Nuthatch': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet'], feeder: ['Tube', 'Suet Cage', 'Hopper'], diet: 'Insects & Seeds' },
+        'Red-breasted Nuthatch': { foods: ['Sunflower Seeds', 'Peanuts', 'Suet'], feeder: ['Tube', 'Suet Cage'], diet: 'Insects & Seeds' },
+
+        // Wrens & Thrushes
+        'Carolina Wren': { foods: ['Suet', 'Mealworms', 'Peanuts'], feeder: ['Suet Cage', 'Platform'], diet: 'Insects' },
+        'American Robin': { foods: ['Mealworms', 'Fruit', 'Suet'], feeder: ['Platform', 'Ground'], diet: 'Insects & Fruit' },
+        'Eastern Bluebird': { foods: ['Mealworms', 'Suet', 'Fruit'], feeder: ['Mealworm Feeder', 'Platform'], diet: 'Insects & Fruit' },
+
+        // Doves
+        'Mourning Dove': { foods: ['Millet', 'Cracked Corn', 'Sunflower Seeds'], feeder: ['Ground', 'Platform'], diet: 'Seeds' },
+
+        // Blackbirds
+        'Red-winged Blackbird': { foods: ['Cracked Corn', 'Millet', 'Sunflower Seeds'], feeder: ['Ground', 'Platform'], diet: 'Seeds & Insects' },
+        'Common Grackle': { foods: ['Cracked Corn', 'Sunflower Seeds'], feeder: ['Ground', 'Platform'], diet: 'Omnivore' },
+        'Brown-headed Cowbird': { foods: ['Millet', 'Cracked Corn'], feeder: ['Ground', 'Platform'], diet: 'Seeds & Insects' }
+    },
+
+    /**
+     * Parse detection date/time from API format
+     * API format: { "date": "2025-10-27", "time": "10:53:12" }
+     */
+    parseDetectionDate(detection) {
+        // Handle separate date and time fields (BirdNET-Go v2 format)
+        if (detection.date && detection.time) {
+            return new Date(`${detection.date}T${detection.time}`);
+        }
+
+        // Fallback to other formats
+        if (detection.begin_time) return new Date(detection.begin_time);
+        if (detection.timestamp) return new Date(detection.timestamp);
+        if (detection.date) return new Date(detection.date);
+        if (detection.DateTime) return new Date(detection.DateTime);
+
+        // Last resort - use current time
+        return new Date();
+    },
+
+    /**
+     * Initialize the application
+     */
+    async init() {
+        console.log('🦜 Initializing Enhanced Backyard Birds Analytics...');
+
+        // Set up event listeners
+        this.setupTabs();
+        this.setupFilters();
+        this.setupExport();
+
+        // Load data
+        await this.loadData();
+
+        // Set up auto-refresh
+        setInterval(() => this.loadData(), this.config.refreshInterval);
+
+        console.log('✅ Application initialized');
+    },
+
+    /**
+     * Load all data from API
+     */
+    async loadData() {
+        try {
+            console.log('📡 Fetching data from API...');
+
+            // Fetch species and detections in parallel
+            const [species, detections] = await Promise.all([
+                this.fetchSpecies(),
+                this.fetchDetections()
+            ]);
+
+            this.data.species = species;
+            this.data.detections = detections;
+
+            // Analyze data
+            this.data.analytics = this.analyzeData();
+
+            // Analyze migration patterns
+            this.data.migrations = this.analyzeMigrationPatterns();
+
+            // Load species images
+            this.loadSpeciesImages();
+
+            // Update UI
+            this.updateDashboard();
+
+            console.log(`✅ Loaded ${species.length} species, ${detections.length} detections`);
+        } catch (error) {
+            console.error('❌ Error loading data:', error);
+            this.showError('Failed to load data. Check API connection.');
+        }
+    },
+
+    /**
+     * Fetch species summary from API
+     */
+    async fetchSpecies() {
+        try {
+            const response = await fetch(`${this.config.apiBase}/analytics/species/summary`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.warn('Species endpoint failed, trying alternative...');
+            return [];
+        }
+    },
+
+    /**
+     * Fetch recent detections from API (limited to 100 for timeline)
+     */
+    async fetchDetections() {
+        try {
+            const endpoints = [
+                '/detections?limit=100',
+                '/notes?limit=100&offset=0'
+            ];
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`${this.config.apiBase}${endpoint}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const detections = Array.isArray(data) ? data : (data.data || []);
+                        console.log(`✅ Found ${detections.length} recent detections from ${endpoint}`);
+                        return detections;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+
+            console.warn('No detections endpoint available');
+            return [];
+        } catch (error) {
+            console.error('Failed to fetch detections:', error);
+            return [];
+        }
+    },
+
+    /**
+     * Load species thumbnail images from species endpoint
+     */
+    async loadSpeciesImages() {
+        const species = this.data.species || [];
+
+        // Load thumbnails from species endpoint's thumbnail_url field
+        for (const sp of species) {
+            const speciesName = sp.commonName || sp.common_name || sp.scientificName || 'Unknown';
+
+            if (sp.thumbnail_url) {
+                this.data.speciesImages[speciesName] = sp.thumbnail_url;
+                console.log(`✅ Loaded thumbnail for ${speciesName}`);
+            }
+        }
+
+        console.log(`📸 Loaded ${Object.keys(this.data.speciesImages).length} species thumbnails from API`);
+
+        // Refresh species displays with images
+        this.renderOverview();
+        this.renderSpecies();
+    },
+
+    /**
+     * Analyze migration patterns from species summary
+     */
+    analyzeMigrationPatterns() {
+        const species = this.data.species;
+        if (species.length === 0) return [];
+
+        const migrations = [];
+        const today = new Date();
+
+        for (const s of species) {
+            const speciesName = s.commonName || s.common_name || s.scientificName || 'Unknown';
+            const firstSeen = s.firstSeen ? new Date(s.firstSeen) : null;
+            const lastSeen = s.lastSeen ? new Date(s.lastSeen) : null;
+            const count = s.detections || s.count || 0;
+
+            if (!firstSeen || !lastSeen) continue;
+
+            // Simple pattern classification based on first/last seen
+            const pattern = this.classifyMigrationPatternSimple(firstSeen, lastSeen);
+
+            // Simple prediction based on last seen date
+            const prediction = this.predictMigrationSimple(pattern, firstSeen, lastSeen, today);
+
+            migrations.push({
+                species: speciesName,
+                pattern: pattern.type,
+                firstSeen,
+                lastSeen,
+                detectionCount: count,
+                monthlyPresence: [],
+                prediction,
+                confidence: count >= 50 ? 'high' : count >= 20 ? 'medium' : 'low'
+            });
+        }
+
+        return migrations.sort((a, b) => {
+            const aDate = a.prediction.nextDate || new Date(9999, 0, 1);
+            const bDate = b.prediction.nextDate || new Date(9999, 0, 1);
+            return aDate - bDate;
+        });
+    },
+
+    /**
+     * Classify migration pattern (simplified version for species summary)
+     */
+    classifyMigrationPatternSimple(firstSeen, lastSeen) {
+        const daysSinceFirst = (new Date() - firstSeen) / (1000 * 60 * 60 * 24);
+        const daysSinceLast = (new Date() - lastSeen) / (1000 * 60 * 60 * 24);
+
+        // If seen recently and for a long time, likely resident
+        if (daysSinceFirst > 300 && daysSinceLast < 30) {
+            return { type: 'resident', description: 'Year-round resident' };
+        }
+
+        // Determine by months
+        const firstMonth = firstSeen.getMonth();
+        const lastMonth = lastSeen.getMonth();
+
+        // Summer (April-September)
+        if (firstMonth >= 3 && firstMonth <= 5 && lastMonth >= 7 && lastMonth <= 9) {
+            return { type: 'summer', description: 'Summer breeding visitor' };
+        }
+
+        // Winter (October-March)
+        if ((firstMonth >= 9 || firstMonth <= 2) && (lastMonth >= 9 || lastMonth <= 2)) {
+            return { type: 'winter', description: 'Winter visitor' };
+        }
+
+        // Otherwise transient
+        return { type: 'transient', description: 'Migratory (passing through)' };
+    },
+
+    /**
+     * Predict migration timing (simplified)
+     */
+    predictMigrationSimple(pattern, firstSeen, lastSeen, today) {
+        const daysSinceLast = (today - lastSeen) / (1000 * 60 * 60 * 24);
+
+        if (pattern.type === 'resident') {
+            return {
+                status: 'present',
+                message: 'Expected year-round',
+                nextDate: null
+            };
+        }
+
+        // If seen within last 7 days, consider present
+        if (daysSinceLast < 7) {
+            return {
+                status: 'present',
+                message: `Recently seen on ${lastSeen.toLocaleDateString()}`,
+                nextDate: lastSeen
+            };
+        }
+
+        // If not seen recently, consider departed
+        if (daysSinceLast > 30) {
+            return {
+                status: 'departed',
+                message: `Last seen ${lastSeen.toLocaleDateString()}. May return in migration season.`,
+                nextDate: new Date(today.getFullYear() + 1, firstSeen.getMonth(), firstSeen.getDate())
+            };
+        }
+
+        // In between - migrating
+        return {
+            status: 'migrating',
+            message: 'May appear during migration',
+            nextDate: today
+        };
+    },
+
+    /**
+     * Get day of year (1-366)
+     */
+    getDayOfYear(date) {
+        const start = new Date(date.getFullYear(), 0, 0);
+        const diff = date - start;
+        const oneDay = 1000 * 60 * 60 * 24;
+        return Math.floor(diff / oneDay);
+    },
+
+    /**
+     * Classify migration pattern
+     */
+    classifyMigrationPattern(monthlyPresence, dates) {
+        const presentMonths = monthlyPresence.filter(c => c > 0).length;
+        const total = monthlyPresence.reduce((a, b) => a + b, 0);
+
+        // Year-round resident
+        if (presentMonths >= 10) {
+            return { type: 'resident', description: 'Year-round resident' };
+        }
+
+        // Summer resident (May-August)
+        const summer = monthlyPresence.slice(4, 8).reduce((a, b) => a + b, 0);
+        if (summer / total > 0.6) {
+            return { type: 'summer', description: 'Summer breeding visitor' };
+        }
+
+        // Winter resident (November-February)
+        const winter = monthlyPresence.slice(10, 12).reduce((a, b) => a + b, 0) +
+                      monthlyPresence.slice(0, 2).reduce((a, b) => a + b, 0);
+        if (winter / total > 0.6) {
+            return { type: 'winter', description: 'Winter visitor' };
+        }
+
+        // Transient (spring/fall migration)
+        return { type: 'transient', description: 'Migratory (passing through)' };
+    },
+
+    /**
+     * Predict migration timing
+     */
+    predictMigration(pattern, daysOfYear, monthlyPresence) {
+        const today = new Date();
+        const currentDay = this.getDayOfYear(today);
+
+        if (pattern.type === 'resident') {
+            return {
+                status: 'present',
+                message: 'Expected year-round',
+                nextDate: null
+            };
+        }
+
+        const avgDay = daysOfYear.reduce((a, b) => a + b, 0) / daysOfYear.length;
+        const minDay = Math.min(...daysOfYear);
+        const maxDay = Math.max(...daysOfYear);
+
+        let status, message, nextDate;
+
+        if (pattern.type === 'summer') {
+            if (currentDay >= minDay && currentDay <= maxDay) {
+                status = 'present';
+                message = `Expected until ~${this.formatDayOfYear(maxDay)}`;
+                nextDate = this.getDayOfYearAsDate(maxDay);
+            } else if (currentDay < minDay) {
+                status = 'expected';
+                message = `Expected to arrive ~${this.formatDayOfYear(minDay)}`;
+                nextDate = this.getDayOfYearAsDate(minDay);
+            } else {
+                status = 'departed';
+                message = `Expected to return ~${this.formatDayOfYear(minDay)} next year`;
+                const next = new Date(today.getFullYear() + 1, 0, minDay);
+                nextDate = next;
+            }
+        } else if (pattern.type === 'winter') {
+            const winterStart = 305; // ~November 1
+            const winterEnd = 75;    // ~March 15
+
+            if (currentDay >= winterStart || currentDay <= winterEnd) {
+                status = 'present';
+                message = 'Currently present for winter';
+                nextDate = this.getDayOfYearAsDate(winterEnd);
+            } else if (currentDay < winterStart) {
+                status = 'expected';
+                message = `Expected to arrive ~${this.formatDayOfYear(winterStart)}`;
+                nextDate = this.getDayOfYearAsDate(winterStart);
+            } else {
+                status = 'departed';
+                message = `Expected to return ~${this.formatDayOfYear(winterStart)}`;
+                nextDate = this.getDayOfYearAsDate(winterStart);
+            }
+        } else { // transient
+            const springWindow = currentDay >= minDay - 30 && currentDay <= minDay + 30;
+            const fallWindow = currentDay >= maxDay - 30 && currentDay <= maxDay + 30;
+
+            if (springWindow || fallWindow) {
+                status = 'migrating';
+                message = 'May appear during migration';
+                nextDate = new Date();
+            } else if (currentDay < minDay) {
+                status = 'expected';
+                message = `Spring migration ~${this.formatDayOfYear(minDay)}`;
+                nextDate = this.getDayOfYearAsDate(minDay);
+            } else {
+                status = 'departed';
+                message = `Next spring migration ~${this.formatDayOfYear(minDay)}`;
+                const next = new Date(today.getFullYear() + 1, 0, minDay);
+                nextDate = next;
+            }
+        }
+
+        return { status, message, nextDate };
+    },
+
+    /**
+     * Format day of year as readable date
+     */
+    formatDayOfYear(day) {
+        const date = new Date(new Date().getFullYear(), 0, day);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    },
+
+    /**
+     * Get date object from day of year
+     */
+    getDayOfYearAsDate(day) {
+        return new Date(new Date().getFullYear(), 0, day);
+    },
+
+    /**
+     * Calculate confidence
+     */
+    calculateConfidence(dates) {
+        const years = new Set(dates.map(d => d.getFullYear())).size;
+        const count = dates.length;
+
+        if (years >= 3 && count >= 20) return 'high';
+        if (years >= 2 && count >= 10) return 'medium';
+        return 'low';
+    },
+
+    /**
+     * Analyze data to generate insights
+     * Uses species summary for most analytics, detections for recent activity only
+     */
+    analyzeData() {
+        const { species, detections } = this.data;
+
+        if (species.length === 0 && detections.length === 0) {
+            return this.getEmptyAnalytics();
+        }
+
+        // Use species summary as primary data source
+        const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
+
+        return {
+            // Basic stats from species summary
+            totalSpecies: species.length,
+            totalDetections: totalDetections,
+            filteredDetections: totalDetections,
+
+            // Time-based analytics (from recent 100 detections - sample data)
+            daily: this.analyzeDailyActivity(detections),
+            hourly: this.analyzeHourlyPattern(detections),
+            weekly: this.analyzeWeeklyPattern(detections),
+            monthly: this.analyzeMonthlyPattern(detections),
+
+            // Species analytics (from species summary - accurate)
+            topSpecies: this.getTopSpeciesFromSummary(species),
+            allSpecies: this.getAllSpeciesFromSummary(species),
+            diversity: this.calculateDiversityFromSummary(species),
+            rarest: this.getRarestFromSummary(species),
+
+            // Recent activity (from recent 100 detections)
+            today: this.getTodayStats(detections),
+            recent: this.getRecentDetections(detections, 50),
+
+            // Insights
+            insights: this.generateInsightsFromSummary(species, detections)
+        };
+    },
+
+    /**
+     * Apply date range filters
+     */
+    applyFilters(detections) {
+        let filtered = [...detections];
+
+        // Date range filter
+        if (this.filters.dateRange !== 'all') {
+            const now = new Date();
+            const cutoff = new Date();
+
+            switch (this.filters.dateRange) {
+                case 'today':
+                    cutoff.setHours(0, 0, 0, 0);
+                    break;
+                case 'week':
+                    cutoff.setDate(cutoff.getDate() - 7);
+                    break;
+                case 'month':
+                    cutoff.setMonth(cutoff.getMonth() - 1);
+                    break;
+            }
+
+            filtered = filtered.filter(d => {
+                const date = this.parseDetectionDate(d);
+                return date >= cutoff;
+            });
+        }
+
+        // Species name filter
+        if (this.filters.speciesFilter) {
+            const search = this.filters.speciesFilter.toLowerCase();
+            filtered = filtered.filter(d => {
+                const name = (d.commonName || d.common_name || d.scientificName || '').toLowerCase();
+                return name.includes(search);
+            });
+        }
+
+        return filtered;
+    },
+
+    /**
+     * Analyze monthly pattern
+     */
+    analyzeMonthlyPattern(detections) {
+        const months = Array(12).fill(0);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        detections.forEach(d => {
+            const date = this.parseDetectionDate(d);
+            months[date.getMonth()]++;
+        });
+
+        return months.map((count, index) => ({ month: monthNames[index], count }));
+    },
+
+    /**
+     * Get rarest species
+     */
+    getRarestSpecies(detections) {
+        const topSpecies = this.getTopSpecies(detections);
+        return topSpecies.filter(s => s.count <= 3).slice(0, 10);
+    },
+
+    /**
+     * Analyze daily activity (last 30 days)
+     */
+    analyzeDailyActivity(detections) {
+        const days = {};
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Initialize last 30 days
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const key = date.toISOString().split('T')[0];
+            days[key] = { count: 0, species: new Set() };
+        }
+
+        // Count detections per day
+        detections.forEach(d => {
+            const date = this.parseDetectionDate(d);
+            const key = date.toISOString().split('T')[0];
+            if (days[key]) {
+                days[key].count++;
+                days[key].species.add(d.commonName || d.common_name || d.scientificName);
+            }
+        });
+
+        return Object.entries(days).map(([date, data]) => ({
+            date,
+            count: data.count,
+            speciesCount: data.species.size
+        }));
+    },
+
+    /**
+     * Analyze hourly pattern
+     */
+    analyzeHourlyPattern(detections) {
+        const hours = Array(24).fill(0);
+
+        detections.forEach(d => {
+            const date = this.parseDetectionDate(d);
+            const hour = date.getHours();
+            hours[hour]++;
+        });
+
+        return hours.map((count, hour) => ({ hour, count }));
+    },
+
+    /**
+     * Analyze weekly pattern (day of week)
+     */
+    analyzeWeeklyPattern(detections) {
+        const days = Array(7).fill(0);
+
+        detections.forEach(d => {
+            const date = this.parseDetectionDate(d);
+            const day = date.getDay();
+            days[day]++;
+        });
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return days.map((count, index) => ({ day: dayNames[index], count }));
+    },
+
+    /**
+     * Get top species by detection count
+     */
+    getTopSpecies(detections) {
+        const speciesCounts = {};
+
+        detections.forEach(d => {
+            const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
+            if (!speciesCounts[species]) {
+                speciesCounts[species] = {
+                    name: species,
+                    count: 0,
+                    totalConfidence: 0,
+                    firstSeen: this.parseDetectionDate(d),
+                    lastSeen: this.parseDetectionDate(d)
+                };
+            }
+
+            speciesCounts[species].count++;
+            speciesCounts[species].totalConfidence += parseFloat(d.confidence || 0);
+
+            const date = this.parseDetectionDate(d);
+            if (date < speciesCounts[species].firstSeen) {
+                speciesCounts[species].firstSeen = date;
+            }
+            if (date > speciesCounts[species].lastSeen) {
+                speciesCounts[species].lastSeen = date;
+            }
+        });
+
+        return Object.values(speciesCounts)
+            .map(s => ({
+                ...s,
+                avgConfidence: s.totalConfidence / s.count
+            }))
+            .sort((a, b) => b.count - a.count);
+    },
+
+    /**
+     * Get all species stats
+     */
+    getAllSpeciesStats(detections) {
+        return this.getTopSpecies(detections);
+    },
+
+    /**
+     * Calculate diversity metrics
+     */
+    calculateDiversity(detections) {
+        const topSpecies = this.getTopSpecies(detections);
+        const total = detections.length;
+
+        return topSpecies.slice(0, 10).map(s => ({
+            name: s.name,
+            count: s.count,
+            percentage: ((s.count / total) * 100).toFixed(1)
+        }));
+    },
+
+    /**
+     * Get today's stats
+     */
+    getTodayStats(detections) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayDetections = detections.filter(d => {
+            const date = this.parseDetectionDate(d);
+            return date >= today;
+        });
+
+        const species = new Set(todayDetections.map(d => d.commonName || d.common_name || d.scientificName));
+
+        return {
+            count: todayDetections.length,
+            species: species.size
+        };
+    },
+
+    /**
+     * Get today's active species with details
+     */
+    getTodayActiveSpecies(detections) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        console.log(`🔍 Filtering detections for today (${today.toDateString()})`);
+
+        const todayDetections = detections.filter(d => {
+            const date = this.parseDetectionDate(d);
+            return date >= today;
+        });
+
+        console.log(`✅ Found ${todayDetections.length} detections today`);
+
+        // Count detections per species today
+        const speciesCounts = {};
+        todayDetections.forEach(d => {
+            const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
+            if (!speciesCounts[species]) {
+                speciesCounts[species] = 0;
+            }
+            speciesCounts[species]++;
+        });
+
+        const uniqueSpeciesToday = Object.keys(speciesCounts).length;
+        console.log(`🐦 ${uniqueSpeciesToday} unique species detected today`);
+
+        // Get species data with thumbnails from the main species list
+        const todaySpeciesList = Object.entries(speciesCounts).map(([speciesName, count]) => {
+            const speciesData = this.data.species.find(s =>
+                (s.commonName || s.common_name || s.scientificName) === speciesName
+            );
+
+            return {
+                name: speciesName,
+                count: count,
+                thumbnail: speciesData?.thumbnail_url || null
+            };
+        });
+
+        // Sort by count descending
+        return todaySpeciesList.sort((a, b) => b.count - a.count);
+    },
+
+    /**
+     * Get recent detections
+     */
+    getRecentDetections(detections, limit = 50) {
+        return detections
+            .map(d => ({
+                ...d,
+                timestamp: this.parseDetectionDate(d)
+            }))
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, limit);
+    },
+
+    /**
+     * Get top species from species summary endpoint
+     */
+    getTopSpeciesFromSummary(species) {
+        return species
+            .map(s => ({
+                name: s.commonName || s.common_name || s.scientificName || 'Unknown',
+                count: s.detections || s.count || 0,
+                avgConfidence: s.confidence || s.avgConfidence || 0,
+                firstSeen: s.firstSeen ? new Date(s.firstSeen) : new Date(),
+                lastSeen: s.lastSeen ? new Date(s.lastSeen) : new Date(),
+                totalConfidence: (s.detections || s.count || 0) * (s.confidence || 0)
+            }))
+            .sort((a, b) => b.count - a.count);
+    },
+
+    /**
+     * Get all species stats from summary
+     */
+    getAllSpeciesFromSummary(species) {
+        return this.getTopSpeciesFromSummary(species);
+    },
+
+    /**
+     * Calculate diversity from species summary
+     */
+    calculateDiversityFromSummary(species) {
+        const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
+
+        return species
+            .sort((a, b) => (b.detections || b.count || 0) - (a.detections || a.count || 0))
+            .slice(0, 10)
+            .map(s => ({
+                name: s.commonName || s.common_name || s.scientificName || 'Unknown',
+                count: s.detections || s.count || 0,
+                percentage: totalDetections > 0 ? (((s.detections || s.count || 0) / totalDetections) * 100).toFixed(1) : '0.0'
+            }));
+    },
+
+    /**
+     * Get rarest species from summary
+     */
+    getRarestFromSummary(species) {
+        return species
+            .filter(s => (s.detections || s.count || 0) <= 3)
+            .map(s => ({
+                name: s.commonName || s.common_name || s.scientificName || 'Unknown',
+                count: s.detections || s.count || 0,
+                avgConfidence: s.confidence || s.avgConfidence || 0,
+                firstSeen: s.firstSeen ? new Date(s.firstSeen) : new Date(),
+                lastSeen: s.lastSeen ? new Date(s.lastSeen) : new Date()
+            }))
+            .sort((a, b) => a.count - b.count)
+            .slice(0, 10);
+    },
+
+    /**
+     * Generate insights from species summary and recent detections
+     */
+    generateInsightsFromSummary(species, detections) {
+        const insights = [];
+        const hourly = this.analyzeHourlyPattern(detections);
+        const topSpecies = this.getTopSpeciesFromSummary(species);
+        const totalDetections = species.reduce((sum, s) => sum + (s.detections || s.count || 0), 0);
+
+        // Peak activity time (from recent detections sample)
+        if (hourly.length > 0) {
+            const peakHour = hourly.reduce((max, h) => h.count > max.count ? h : max, hourly[0]);
+            if (peakHour.count > 0) {
+                insights.push({
+                    type: 'peak-time',
+                    icon: '🕐',
+                    title: 'Peak Activity Hour (Recent Sample)',
+                    text: `Based on recent detections, most bird activity occurs around ${peakHour.hour}:00 with ${peakHour.count} detections.`
+                });
+            }
+        }
+
+        // Most common bird (from accurate species summary)
+        if (topSpecies.length > 0) {
+            const top = topSpecies[0];
+            const percentage = totalDetections > 0 ? ((top.count / totalDetections) * 100).toFixed(1) : '0';
+            insights.push({
+                type: 'common-species',
+                icon: '👑',
+                title: 'Most Common Visitor',
+                text: `${top.name} is your backyard champion with ${top.count.toLocaleString()} total detections (${percentage}% of all sightings).`
+            });
+        }
+
+        // Species diversity (from accurate species summary)
+        const uniqueSpecies = species.length;
+        insights.push({
+            type: 'diversity',
+            icon: '🌈',
+            title: 'Species Diversity',
+            text: `You've detected ${uniqueSpecies} different species in your backyard with ${totalDetections.toLocaleString()} total detections. ${uniqueSpecies >= 15 ? 'Excellent diversity!' : uniqueSpecies >= 8 ? 'Good variety!' : 'More species may appear as seasons change.'}`
+        });
+
+        // Top 3 species
+        if (topSpecies.length >= 3) {
+            const top3 = topSpecies.slice(0, 3).map(s => s.name).join(', ');
+            insights.push({
+                type: 'top-species',
+                icon: '🏆',
+                title: 'Your Top 3 Species',
+                text: `${top3} are your most frequent visitors.`
+            });
+        }
+
+        // Rare visitors (from accurate species summary)
+        const rare = species.filter(s => (s.detections || s.count || 0) <= 3);
+        if (rare.length > 0) {
+            insights.push({
+                type: 'rare-visitors',
+                icon: '💎',
+                title: 'Rare Visitors',
+                text: `You've had ${rare.length} species with 3 or fewer sightings. These are your rarest backyard visitors!`
+            });
+        }
+
+        // Total detections milestone
+        if (totalDetections >= 10000) {
+            insights.push({
+                type: 'milestone',
+                icon: '🎉',
+                title: 'Detection Milestone!',
+                text: `Congratulations! You've recorded over ${(totalDetections / 1000).toFixed(0)}K bird detections. That's incredible!`
+            });
+        } else if (totalDetections >= 1000) {
+            insights.push({
+                type: 'milestone',
+                icon: '🎉',
+                title: 'Detection Milestone!',
+                text: `You've recorded over ${(totalDetections / 1000).toFixed(1)}K bird detections. Keep watching!`
+            });
+        }
+
+        return insights;
+    },
+
+    /**
+     * Generate AI insights (legacy - kept for compatibility)
+     */
+    generateInsights(detections) {
+        const insights = [];
+        const hourly = this.analyzeHourlyPattern(detections);
+        const topSpecies = this.getTopSpecies(detections);
+        const daily = this.analyzeDailyActivity(detections);
+        const monthly = this.analyzeMonthlyPattern(detections);
+
+        // Peak activity time
+        const peakHour = hourly.reduce((max, h) => h.count > max.count ? h : max, hourly[0]);
+        insights.push({
+            type: 'peak-time',
+            icon: '🕐',
+            title: 'Peak Activity Hour',
+            text: `Most bird activity occurs at ${peakHour.hour}:00 with ${peakHour.count} average detections. Set up your camera or sit by the window during this time!`
+        });
+
+        // Most common bird
+        if (topSpecies.length > 0) {
+            const top = topSpecies[0];
+            const percentage = ((top.count / detections.length) * 100).toFixed(1);
+            insights.push({
+                type: 'common-species',
+                icon: '👑',
+                title: 'Most Common Visitor',
+                text: `${top.name} is your backyard champion, accounting for ${percentage}% of all detections (${top.count} total sightings).`
+            });
+        }
+
+        // Recent activity trend
+        const last7Days = daily.slice(-7);
+        const prev7Days = daily.slice(-14, -7);
+        const recentAvg = last7Days.reduce((sum, d) => sum + d.count, 0) / 7;
+        const prevAvg = prev7Days.reduce((sum, d) => sum + d.count, 0) / 7;
+        const change = prevAvg > 0 ? ((recentAvg - prevAvg) / prevAvg * 100).toFixed(1) : 0;
+
+        if (Math.abs(change) > 10) {
+            insights.push({
+                type: 'activity-trend',
+                icon: change > 0 ? '📈' : '📉',
+                title: 'Activity Trend',
+                text: `Bird activity has ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change)}% over the past week. ${change > 0 ? 'Great time for birding!' : 'Activity may pick up soon.'}`
+            });
+        }
+
+        // Species diversity
+        const uniqueSpecies = new Set(detections.map(d => d.commonName || d.common_name || d.scientificName)).size;
+        insights.push({
+            type: 'diversity',
+            icon: '🌈',
+            title: 'Species Diversity',
+            text: `You've detected ${uniqueSpecies} different species in your backyard. ${uniqueSpecies >= 15 ? 'Excellent diversity!' : uniqueSpecies >= 8 ? 'Good variety!' : 'More species may appear as seasons change.'}`
+        });
+
+        // New species this week
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const newSpecies = topSpecies.filter(s => s.firstSeen >= weekAgo);
+        if (newSpecies.length > 0) {
+            insights.push({
+                type: 'new-species',
+                icon: '🆕',
+                title: 'New Visitors This Week',
+                text: `${newSpecies.length} new species detected: ${newSpecies.map(s => s.name).slice(0, 3).join(', ')}${newSpecies.length > 3 ? ' and more' : ''}.`
+            });
+        }
+
+        // Best month
+        const bestMonth = monthly.reduce((max, m) => m.count > max.count ? m : max, monthly[0]);
+        insights.push({
+            type: 'best-month',
+            icon: '📅',
+            title: 'Most Active Month',
+            text: `${bestMonth.month} is your busiest month with ${bestMonth.count} detections. Plan your bird watching activities accordingly!`
+        });
+
+        // Rare visitors
+        const rare = topSpecies.filter(s => s.count <= 3);
+        if (rare.length > 0) {
+            insights.push({
+                type: 'rare-visitors',
+                icon: '💎',
+                title: 'Rare Visitors',
+                text: `You've had ${rare.length} species with 3 or fewer sightings. Keep watching - you might see them again!`
+            });
+        }
+
+        return insights;
+    },
+
+    /**
+     * Get empty analytics structure
+     */
+    getEmptyAnalytics() {
+        return {
+            totalSpecies: 0,
+            totalDetections: 0,
+            filteredDetections: 0,
+            daily: [],
+            hourly: [],
+            weekly: [],
+            monthly: [],
+            topSpecies: [],
+            allSpecies: [],
+            diversity: [],
+            rarest: [],
+            today: { count: 0, species: 0 },
+            recent: [],
+            insights: []
+        };
+    },
+
+    /**
+     * Update dashboard UI
+     */
+    updateDashboard() {
+        const { analytics } = this.data;
+
+        if (!analytics) return;
+
+        // Update header stats
+        document.getElementById('total-species').textContent = analytics.totalSpecies;
+        document.getElementById('total-detections').textContent = analytics.totalDetections.toLocaleString();
+        document.getElementById('active-today').textContent = analytics.today.species;
+
+        const peakHour = analytics.hourly.reduce((max, h) => h.count > max.count ? h : max, { hour: 0 });
+        document.getElementById('most-active-time').textContent = `${peakHour.hour}:00`;
+
+        // Update filtered count
+        const filterInfo = document.getElementById('filter-info');
+        if (filterInfo) {
+            if (analytics.filteredDetections !== analytics.totalDetections) {
+                filterInfo.textContent = `Showing ${analytics.filteredDetections} of ${analytics.totalDetections} detections`;
+                filterInfo.style.display = 'block';
+            } else {
+                filterInfo.style.display = 'none';
+            }
+        }
+
+        // Update current tab
+        const activeTab = document.querySelector('.tab.active').dataset.tab;
+        this.renderTab(activeTab);
+    },
+
+    /**
+     * Render specific tab
+     */
+    renderTab(tabName) {
+        const { analytics } = this.data;
+
+        if (!analytics) return;
+
+        switch (tabName) {
+            case 'overview':
+                this.renderOverview();
+                break;
+            case 'species':
+                this.renderSpecies();
+                break;
+            case 'activity':
+                this.renderActivity();
+                break;
+            case 'migration':
+                this.renderMigration();
+                break;
+            case 'feeding':
+                this.renderFeeding();
+                break;
+            case 'insights':
+                this.renderInsights();
+                break;
+        }
+    },
+
+    /**
+     * Render overview tab
+     */
+    renderOverview() {
+        const { analytics } = this.data;
+
+        // Daily activity chart
+        this.renderDailyChart(analytics.daily);
+
+        // Top species list
+        this.renderTopSpeciesList(analytics.topSpecies.slice(0, 10));
+
+        // Today's active species
+        this.renderTodayActiveSpecies();
+
+        // Hourly pattern chart
+        this.renderHourlyChart(analytics.hourly);
+
+        // Species distribution chart
+        this.renderDistributionChart(analytics.diversity);
+
+        // Monthly trend
+        this.renderMonthlyChart(analytics.monthly);
+    },
+
+    /**
+     * Render daily activity chart
+     */
+    renderDailyChart(daily) {
+        const canvas = document.getElementById('daily-activity-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        // Destroy existing chart
+        if (this.charts.daily) {
+            this.charts.daily.destroy();
+        }
+
+        this.charts.daily = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: daily.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                datasets: [{
+                    label: 'Unique Species Per Day',
+                    data: daily.map(d => d.speciesCount),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    /**
+     * Get species image URL
+     */
+    getSpeciesImageUrl(speciesName) {
+        if (this.data.speciesImages[speciesName]) {
+            return this.data.speciesImages[speciesName];
+        }
+        // Return bird emoji as fallback
+        return null;
+    },
+
+    /**
+     * Render top species list
+     */
+    renderTopSpeciesList(species) {
+        const container = document.getElementById('top-species-list');
+        if (!container) return;
+
+        if (species.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-icon">🦜</div><p>No species detected yet</p></div>';
+            return;
+        }
+
+        container.innerHTML = species.map(s => {
+            const imageUrl = this.getSpeciesImageUrl(s.name);
+            return `
+            <div class="species-item" onclick="BirdAnalytics.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
+                <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                    ${!imageUrl ? '🐦' : ''}
+                </div>
+                <div class="species-info">
+                    <div class="species-name">${s.name}</div>
+                    <div class="species-meta">${(s.avgConfidence * 100).toFixed(1)}% confidence</div>
+                </div>
+                <div class="species-count">${s.count}</div>
+            </div>
+        `}).join('');
+    },
+
+    /**
+     * Render today's active species grid
+     */
+    renderTodayActiveSpecies() {
+        const container = document.getElementById('today-species-grid');
+        if (!container) {
+            console.warn('⚠️ today-species-grid container not found');
+            return;
+        }
+
+        try {
+            const detections = this.data.detections || [];
+            console.log(`📊 Checking today's species from ${detections.length} recent detections`);
+
+            const todaySpecies = this.getTodayActiveSpecies(detections);
+            console.log(`✅ Found ${todaySpecies.length} species active today`);
+
+            if (todaySpecies.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">🦜</div><p>No species detected today yet</p></div>';
+                return;
+            }
+
+            container.innerHTML = todaySpecies.map(s => {
+                const thumbnail = s.thumbnail || this.getSpeciesImageUrl(s.name);
+                return `
+                    <div class="today-species-card" onclick="BirdAnalytics.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
+                        ${thumbnail ?
+                            `<img src="${thumbnail}" alt="${s.name}" class="today-species-thumbnail" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="today-species-icon" style="display: none;">🐦</div>` :
+                            `<div class="today-species-icon">🐦</div>`
+                        }
+                        <div class="today-species-name">${s.name}</div>
+                        <div class="today-species-count">${s.count} detection${s.count > 1 ? 's' : ''}</div>
+                    </div>
+                `;
+            }).join('');
+
+            console.log(`✅ Rendered ${todaySpecies.length} species active today`);
+        } catch (error) {
+            console.error('❌ Error rendering today\'s species:', error);
+            container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><p>Error loading today\'s species</p></div>';
+        }
+    },
+
+    /**
+     * Render hourly pattern chart
+     */
+    renderHourlyChart(hourly) {
+        const canvas = document.getElementById('hourly-pattern-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        if (this.charts.hourly) {
+            this.charts.hourly.destroy();
+        }
+
+        this.charts.hourly = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: hourly.map(h => `${h.hour}:00`),
+                datasets: [{
+                    label: 'Detections',
+                    data: hourly.map(h => h.count),
+                    backgroundColor: '#667eea'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    /**
+     * Render species distribution chart
+     */
+    renderDistributionChart(diversity) {
+        const canvas = document.getElementById('species-distribution-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        if (this.charts.distribution) {
+            this.charts.distribution.destroy();
+        }
+
+        this.charts.distribution = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: diversity.map(d => d.name),
+                datasets: [{
+                    data: diversity.map(d => d.count),
+                    backgroundColor: [
+                        '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                        '#43e97b', '#fa709a', '#fee140', '#30cfd0',
+                        '#a8edea', '#fed6e3'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    },
+
+    /**
+     * Render monthly chart
+     */
+    renderMonthlyChart(monthly) {
+        const canvas = document.getElementById('monthly-trend-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        if (this.charts.monthly) {
+            this.charts.monthly.destroy();
+        }
+
+        this.charts.monthly = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: monthly.map(m => m.month),
+                datasets: [{
+                    label: 'Detections',
+                    data: monthly.map(m => m.count),
+                    backgroundColor: '#10b981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    /**
+     * Render species tab
+     */
+    renderSpecies() {
+        const { analytics } = this.data;
+        const container = document.getElementById('all-species-list');
+
+        if (!container) return;
+
+        if (analytics.allSpecies.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-icon">🦜</div><p>No species detected yet</p></div>';
+            return;
+        }
+
+        container.innerHTML = analytics.allSpecies.map(s => {
+            const imageUrl = this.getSpeciesImageUrl(s.name);
+            return `
+            <div class="species-item" onclick="BirdAnalytics.showSpeciesDetail('${s.name.replace(/'/g, "\\'")}')">
+                <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                    ${!imageUrl ? '🐦' : ''}
+                </div>
+                <div class="species-info">
+                    <div class="species-name">${s.name}</div>
+                    <div class="species-meta">
+                        First seen: ${s.firstSeen.toLocaleDateString()} •
+                        Last seen: ${s.lastSeen.toLocaleDateString()} •
+                        ${(s.avgConfidence * 100).toFixed(1)}% avg confidence
+                    </div>
+                </div>
+                <div class="species-count">${s.count}</div>
+            </div>
+        `}).join('');
+    },
+
+    /**
+     * Render activity tab
+     */
+    renderActivity() {
+        const { analytics } = this.data;
+
+        // Weekly heatmap
+        this.renderWeeklyHeatmap(analytics.weekly);
+
+        // Recent activity timeline
+        this.renderTimeline(analytics.recent);
+
+        // Rare species
+        this.renderRareSpecies(analytics.rarest);
+    },
+
+    /**
+     * Render weekly heatmap
+     */
+    renderWeeklyHeatmap(weekly) {
+        const canvas = document.getElementById('weekly-heatmap-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        if (this.charts.weekly) {
+            this.charts.weekly.destroy();
+        }
+
+        this.charts.weekly = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: weekly.map(w => w.day),
+                datasets: [{
+                    label: 'Detections',
+                    data: weekly.map(w => w.count),
+                    backgroundColor: '#667eea'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    /**
+     * Render activity timeline
+     */
+    renderTimeline(recent) {
+        const container = document.getElementById('activity-timeline');
+        if (!container) return;
+
+        if (recent.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No recent activity</p></div>';
+            return;
+        }
+
+        container.innerHTML = recent.slice(0, 20).map(d => {
+            const time = d.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const date = d.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const species = d.commonName || d.common_name || d.scientificName || 'Unknown';
+            const confidence = ((d.confidence || 0) * 100).toFixed(1);
+
+            return `
+                <div class="timeline-item">
+                    <div class="timeline-time">${date} at ${time}</div>
+                    <div class="timeline-content">
+                        <strong>${species}</strong> detected (${confidence}% confidence)
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    /**
+     * Render rare species
+     */
+    renderRareSpecies(rarest) {
+        const container = document.getElementById('rare-species-list');
+        if (!container) return;
+
+        if (rarest.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No rare species yet</p></div>';
+            return;
+        }
+
+        container.innerHTML = rarest.map(s => {
+            const imageUrl = this.getSpeciesImageUrl(s.name);
+            return `
+            <div class="species-item">
+                <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                    ${!imageUrl ? '💎' : ''}
+                </div>
+                <div class="species-info">
+                    <div class="species-name">${s.name}</div>
+                    <div class="species-meta">Last seen: ${s.lastSeen.toLocaleDateString()}</div>
+                </div>
+                <div class="species-count">${s.count}</div>
+            </div>
+        `}).join('');
+    },
+
+    /**
+     * Render migration tab
+     */
+    renderMigration() {
+        const migrations = this.data.migrations;
+        const container = document.getElementById('migration-calendar');
+
+        if (!container) return;
+
+        if (!migrations || migrations.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-icon">🦅</div><p>Not enough data to predict migration patterns</p></div>';
+            return;
+        }
+
+        // Group by status
+        const grouped = {
+            present: migrations.filter(m => m.prediction.status === 'present'),
+            expected: migrations.filter(m => m.prediction.status === 'expected'),
+            migrating: migrations.filter(m => m.prediction.status === 'migrating'),
+            departed: migrations.filter(m => m.prediction.status === 'departed')
+        };
+
+        const statusColors = {
+            present: '#10b981',
+            expected: '#3b82f6',
+            migrating: '#f59e0b',
+            departed: '#6b7280'
+        };
+
+        const statusLabels = {
+            present: '✅ Currently Present',
+            expected: '🔜 Expected Soon',
+            migrating: '🦅 Migrating Through',
+            departed: '📅 Departed'
+        };
+
+        let html = '';
+
+        for (const [status, items] of Object.entries(grouped)) {
+            if (items.length === 0) continue;
+
+            html += `
+                <div class="migration-section">
+                    <h3 class="migration-section-title" style="color: ${statusColors[status]}">
+                        ${statusLabels[status]} (${items.length})
+                    </h3>
+                    <div class="migration-grid">
+            `;
+
+            items.forEach(m => {
+                const imageUrl = this.getSpeciesImageUrl(m.species);
+                const confidenceColor = m.confidence === 'high' ? '#10b981' : m.confidence === 'medium' ? '#f59e0b' : '#6b7280';
+
+                html += `
+                    <div class="migration-card" style="border-left-color: ${statusColors[status]}">
+                        <div class="migration-card-header">
+                            <div class="species-icon${imageUrl ? ' species-image' : ''}" style="${imageUrl ? `background-image: url(${imageUrl})` : ''}">
+                                ${!imageUrl ? '🐦' : ''}
+                            </div>
+                            <div class="migration-card-title">
+                                <div class="species-name">${m.species}</div>
+                                <div class="migration-pattern">${m.pattern}</div>
+                            </div>
+                        </div>
+                        <div class="migration-card-body">
+                            <p class="migration-message">${m.prediction.message}</p>
+                            <div class="migration-stats">
+                                <div class="migration-stat-item">
+                                    <span class="label">Detections:</span>
+                                    <span class="value">${m.detectionCount}</span>
+                                </div>
+                                <div class="migration-stat-item">
+                                    <span class="label">First seen:</span>
+                                    <span class="value">${m.firstSeen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                </div>
+                                <div class="migration-stat-item">
+                                    <span class="label">Last seen:</span>
+                                    <span class="value">${m.lastSeen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                </div>
+                                <div class="migration-stat-item">
+                                    <span class="label">Confidence:</span>
+                                    <span class="value" style="color: ${confidenceColor}">${m.confidence}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+    },
+
+    /**
+     * Render insights tab
+     */
+    renderInsights() {
+        const { analytics } = this.data;
+        const container = document.getElementById('insights-container');
+
+        if (!container) return;
+
+        if (analytics.insights.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>Not enough data to generate insights</p></div>';
+            return;
+        }
+
+        container.innerHTML = analytics.insights.map(insight => `
+            <div class="insight-box">
+                <div class="insight-icon">${insight.icon}</div>
+                <div class="insight-content">
+                    <div class="insight-title">${insight.title}</div>
+                    <div class="insight-text">${insight.text}</div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    /**
+     * Render feeding recommendations tab
+     */
+    renderFeeding() {
+        this.renderSeasonalFeeding();
+        this.renderSpeciesFeedingGuide();
+    },
+
+    /**
+     * Get current season
+     */
+    getCurrentSeason() {
+        const month = new Date().getMonth();
+        if (month >= 2 && month <= 4) return 'spring';
+        if (month >= 5 && month <= 7) return 'summer';
+        if (month >= 8 && month <= 10) return 'fall';
+        return 'winter';
+    },
+
+    /**
+     * Get seasonal feeding recommendations
+     */
+    getSeasonalRecommendations() {
+        const season = this.getCurrentSeason();
+        const recommendations = {
+            spring: {
+                title: 'Spring Feeding (March - May)',
+                icon: '🌸',
+                badge: 'season-spring',
+                description: 'Spring is nesting and migration time. Birds need protein-rich foods to support breeding and prepare for migration.',
+                foods: [
+                    { name: 'Mealworms', reason: 'High protein for nesting birds and chicks' },
+                    { name: 'Suet', reason: 'Energy for migrating birds' },
+                    { name: 'Sunflower Seeds', reason: 'Fat and protein for breeding season' },
+                    { name: 'Nyjer Seed', reason: 'Essential for finches raising young' },
+                    { name: 'Fruit', reason: 'Natural food for early migrants like robins' }
+                ],
+                tips: [
+                    'Offer live mealworms to attract bluebirds and wrens',
+                    'Keep feeders clean to prevent disease during crowded migration',
+                    'Add a water source - birds need it for drinking and bathing',
+                    'Reduce feeding in late spring when natural food becomes abundant'
+                ]
+            },
+            summer: {
+                title: 'Summer Feeding (June - August)',
+                icon: '☀️',
+                badge: 'season-summer',
+                description: 'Many birds switch to natural insects in summer, but feeders still help parents feeding chicks.',
+                foods: [
+                    { name: 'Nyjer Seed', reason: 'Goldfinches still love it year-round' },
+                    { name: 'Sunflower Chips', reason: 'No shells = less mess in summer heat' },
+                    { name: 'Fruit', reason: 'Attracts orioles, tanagers, and catbirds' },
+                    { name: 'Sugar Water', reason: 'For hummingbirds (change every 2-3 days)' },
+                    { name: 'Mealworms', reason: 'Protein boost for parent birds' }
+                ],
+                tips: [
+                    'Change water and nectar frequently in hot weather',
+                    'Clean feeders weekly to prevent mold and bacteria',
+                    'Use smaller quantities of seed to keep it fresh',
+                    'Provide shade for feeders if possible',
+                    'Keep suet in the refrigerator or use no-melt formulas'
+                ]
+            },
+            fall: {
+                title: 'Fall Feeding (September - November)',
+                icon: '🍂',
+                badge: 'season-fall',
+                description: 'Fall migration brings new visitors. Birds need high-fat foods to fuel their journeys south.',
+                foods: [
+                    { name: 'Sunflower Seeds', reason: 'High fat content for migration energy' },
+                    { name: 'Peanuts', reason: 'Excellent fat and protein source' },
+                    { name: 'Suet', reason: 'Essential high-energy food for migrants' },
+                    { name: 'Nyjer Seed', reason: 'Migrating finches fuel up' },
+                    { name: 'Millet', reason: 'Attracts sparrows and juncos returning for winter' }
+                ],
+                tips: [
+                    'Stock up on food for winter - birds are scouting feeding sites',
+                    'Add suet feeders back after summer break',
+                    'Watch for uncommon migrants passing through',
+                    'Keep feeders full to help birds build fat reserves',
+                    'Clean feeders before winter residents arrive'
+                ]
+            },
+            winter: {
+                title: 'Winter Feeding (December - February)',
+                icon: '❄️',
+                badge: 'season-winter',
+                description: 'Winter is the most critical feeding time. Birds rely heavily on feeders when natural food is scarce.',
+                foods: [
+                    { name: 'Black Oil Sunflower Seeds', reason: 'Maximum calories with thin shells' },
+                    { name: 'Suet', reason: 'Critical fat source for cold weather' },
+                    { name: 'Peanuts', reason: 'High-energy food woodpeckers love' },
+                    { name: 'Safflower Seeds', reason: 'Cardinals love them, squirrels don\'t' },
+                    { name: 'Cracked Corn', reason: 'Ground feeders like juncos and doves' }
+                ],
+                tips: [
+                    'Keep feeders full - birds depend on reliable food sources',
+                    'Offer suet in multiple locations for woodpeckers',
+                    'Shovel areas under feeders after snowfall',
+                    'Provide fresh water with a heated birdbath',
+                    'Feed in the morning and evening when birds need energy most'
+                ]
+            }
+        };
+
+        return recommendations[season];
+    },
+
+    /**
+     * Render seasonal feeding recommendations
+     */
+    renderSeasonalFeeding() {
+        const container = document.getElementById('seasonal-feeding-recommendations');
+        if (!container) return;
+
+        const recommendations = this.getSeasonalRecommendations();
+        const season = this.getCurrentSeason();
+
+        // Update subtitle
+        const subtitle = document.getElementById('feeding-season-subtitle');
+        if (subtitle) {
+            subtitle.textContent = `${recommendations.title} - Recommendations for your birds`;
+        }
+
+        container.innerHTML = `
+            <div class="feeding-card">
+                <div class="feeding-card-title">
+                    <span class="feeding-card-icon">${recommendations.icon}</span>
+                    ${recommendations.title}
+                    <span class="season-badge ${recommendations.badge}">${season.toUpperCase()}</span>
+                </div>
+                <div class="feeding-card-content">
+                    <p><strong>${recommendations.description}</strong></p>
+
+                    <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--primary);">🥜 Best Foods for ${season.charAt(0).toUpperCase() + season.slice(1)}</h4>
+                    ${recommendations.foods.map(food => `
+                        <div class="food-category">
+                            <div class="food-category-title">${food.name}</div>
+                            <div>${food.reason}</div>
+                        </div>
+                    `).join('')}
+
+                    <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--primary);">💡 ${season.charAt(0).toUpperCase() + season.slice(1)} Feeding Tips</h4>
+                    <ul>
+                        ${recommendations.tips.map(tip => `<li>${tip}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+
+        console.log(`✅ Rendered ${season} seasonal feeding recommendations`);
+    },
+
+    /**
+     * Render species-specific feeding guide
+     */
+    renderSpeciesFeedingGuide() {
+        const container = document.getElementById('species-feeding-guide');
+        if (!container) return;
+
+        const topSpecies = this.data.analytics?.topSpecies || [];
+
+        // Filter species that have feeding data
+        const speciesWithFeeding = topSpecies.filter(s =>
+            this.birdFoodDatabase[s.name]
+        ).slice(0, 12); // Show top 12 species with feeding data
+
+        if (speciesWithFeeding.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No feeding recommendations available for your detected species yet</p></div>';
+            return;
+        }
+
+        // Aggregate all recommended foods
+        const allFoods = {};
+        const allFeeders = {};
+
+        speciesWithFeeding.forEach(species => {
+            const feedingData = this.birdFoodDatabase[species.name];
+            feedingData.foods.forEach(food => {
+                if (!allFoods[food]) allFoods[food] = [];
+                allFoods[food].push(species.name);
+            });
+            feedingData.feeder.forEach(feeder => {
+                if (!allFeeders[feeder]) allFeeders[feeder] = [];
+                allFeeders[feeder].push(species.name);
+            });
+        });
+
+        container.innerHTML = `
+            <div class="feeding-grid">
+                <!-- Food Summary -->
+                <div class="feeding-card">
+                    <div class="feeding-card-title">
+                        <span class="feeding-card-icon">🌻</span>
+                        Recommended Foods for Your Birds
+                    </div>
+                    <div class="feeding-card-content">
+                        <p style="margin-bottom: 1rem;">Based on the ${speciesWithFeeding.length} species you're detecting:</p>
+                        ${Object.entries(allFoods)
+                            .sort((a, b) => b[1].length - a[1].length)
+                            .slice(0, 8)
+                            .map(([food, birds]) => `
+                                <div class="food-category">
+                                    <div class="food-category-title">${food}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-light);">
+                                        Attracts ${birds.length} of your species
+                                    </div>
+                                </div>
+                            `).join('')}
+                    </div>
+                </div>
+
+                <!-- Feeder Types -->
+                <div class="feeding-card">
+                    <div class="feeding-card-title">
+                        <span class="feeding-card-icon">🏠</span>
+                        Recommended Feeder Types
+                    </div>
+                    <div class="feeding-card-content">
+                        <p style="margin-bottom: 1rem;">Best feeders for your backyard:</p>
+                        ${Object.entries(allFeeders)
+                            .sort((a, b) => b[1].length - a[1].length)
+                            .map(([feeder, birds]) => `
+                                <div class="food-category">
+                                    <div class="food-category-title">${feeder} Feeder</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-light);">
+                                        For ${birds.length} of your species
+                                    </div>
+                                </div>
+                            `).join('')}
+                    </div>
+                </div>
+
+                <!-- Species-Specific Guide -->
+                ${speciesWithFeeding.slice(0, 10).map(species => {
+                    const feedingData = this.birdFoodDatabase[species.name];
+                    return `
+                        <div class="feeding-card">
+                            <div class="feeding-card-title">
+                                <span class="feeding-card-icon">🐦</span>
+                                ${species.name}
+                            </div>
+                            <div class="feeding-card-content">
+                                <p><strong>Diet:</strong> ${feedingData.diet}</p>
+                                <div class="food-category">
+                                    <div class="food-category-title">Favorite Foods</div>
+                                    <div class="food-list">
+                                        ${feedingData.foods.map(food => `<span class="food-tag">${food}</span>`).join('')}
+                                    </div>
+                                </div>
+                                <div class="food-category">
+                                    <div class="food-category-title">Feeder Types</div>
+                                    <div style="font-size: 0.875rem;">
+                                        ${feedingData.feeder.join(', ')}
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.5rem;">
+                                    ${species.count} detections in your yard
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+        console.log(`✅ Rendered feeding guide for ${speciesWithFeeding.length} species`);
+    },
+
+    /**
+     * Show species detail modal
+     */
+    showSpeciesDetail(speciesName) {
+        const species = this.data.analytics.allSpecies.find(s => s.name === speciesName);
+        if (!species) return;
+
+        const migration = this.data.migrations?.find(m => m.species === speciesName);
+        const imageUrl = this.getSpeciesImageUrl(speciesName);
+
+        const modal = document.getElementById('species-modal');
+        if (!modal) return;
+
+        const modalBody = modal.querySelector('.modal-body');
+
+        modalBody.innerHTML = `
+            <div class="species-detail">
+                ${imageUrl ? `<img src="${imageUrl}" alt="${speciesName}" class="species-detail-image">` : ''}
+                <h2>${speciesName}</h2>
+
+                <div class="species-detail-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Detections</div>
+                        <div class="stat-value">${species.count}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Confidence</div>
+                        <div class="stat-value">${(species.avgConfidence * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">First Seen</div>
+                        <div class="stat-value">${species.firstSeen.toLocaleDateString()}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Last Seen</div>
+                        <div class="stat-value">${species.lastSeen.toLocaleDateString()}</div>
+                    </div>
+                </div>
+
+                ${migration ? `
+                    <div class="species-detail-section">
+                        <h3>Migration Pattern</h3>
+                        <p><strong>Pattern:</strong> ${migration.pattern}</p>
+                        <p><strong>Status:</strong> ${migration.prediction.message}</p>
+                        <p><strong>Confidence:</strong> ${migration.confidence}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+    },
+
+    /**
+     * Export data to CSV
+     */
+    exportToCSV() {
+        const { analytics } = this.data;
+
+        if (!analytics || analytics.allSpecies.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        let csv = 'Species,Total Detections,Avg Confidence,First Seen,Last Seen\n';
+
+        analytics.allSpecies.forEach(s => {
+            csv += `"${s.name}",${s.count},${(s.avgConfidence * 100).toFixed(1)}%,${s.firstSeen.toLocaleDateString()},${s.lastSeen.toLocaleDateString()}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bird-detections-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        console.log('✅ Exported data to CSV');
+    },
+
+    /**
+     * Set up tab switching
+     */
+    setupTabs() {
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // Show corresponding content
+                tabContents.forEach(content => {
+                    content.style.display = 'none';
+                });
+
+                const targetContent = document.getElementById(`tab-${tabName}`);
+                if (targetContent) {
+                    targetContent.style.display = 'block';
+                }
+
+                // Render tab content
+                this.renderTab(tabName);
+            });
+        });
+    },
+
+    /**
+     * Set up filters
+     */
+    setupFilters() {
+        const dateRangeSelect = document.getElementById('date-range-filter');
+        if (dateRangeSelect) {
+            dateRangeSelect.addEventListener('change', (e) => {
+                this.filters.dateRange = e.target.value;
+                this.data.analytics = this.analyzeData();
+                this.updateDashboard();
+            });
+        }
+
+        const speciesSearch = document.getElementById('species-search');
+        if (speciesSearch) {
+            speciesSearch.addEventListener('input', (e) => {
+                this.filters.speciesFilter = e.target.value;
+                this.data.analytics = this.analyzeData();
+                this.updateDashboard();
+            });
+        }
+    },
+
+    /**
+     * Set up export
+     */
+    setupExport() {
+        const exportBtn = document.getElementById('export-csv-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportToCSV());
+        }
+    },
+
+    /**
+     * Show error message
+     */
+    showError(message) {
+        console.error(message);
+        // Could add a toast notification here
+    }
+};
+
+// Initialize app when DOM is ready
+console.log('📋 Document ready state:', document.readyState);
+if (document.readyState === 'loading') {
+    console.log('⏳ Waiting for DOMContentLoaded...');
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('✅ DOMContentLoaded fired');
+        BirdAnalytics.init();
+    });
+} else {
+    console.log('✅ DOM already loaded, initializing now');
+    BirdAnalytics.init();
+}

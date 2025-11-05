@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backyard Birds - Personal Analytics</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Advanced analytics dashboard for BirdNET-Go bird detection system">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="BirdNET">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icon.svg">
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="css/styles.css?v=2024102907">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-branding">
+                <h1 class="sidebar-title">🦜 BirdNET</h1>
+                <p class="sidebar-subtitle">Analytics</p>
+            </div>
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle Sidebar">
+                <span class="toggle-icon">‹</span>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-tab="overview">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Overview</span>
+            </button>
+            <button class="nav-item" data-tab="species">
+                <span class="nav-icon">🐦</span>
+                <span class="nav-label">Species</span>
+            </button>
+            <button class="nav-item" data-tab="insights">
+                <span class="nav-icon">💡</span>
+                <span class="nav-label">Insights</span>
+            </button>
+            <button class="nav-item" data-tab="trends">
+                <span class="nav-icon">📈</span>
+                <span class="nav-label">Trends</span>
+            </button>
+            <button class="nav-item" data-tab="analytics">
+                <span class="nav-icon">🔬</span>
+                <span class="nav-label">Analytics</span>
+            </button>
+            <button class="nav-item" data-tab="activity">
+                <span class="nav-icon">⏰</span>
+                <span class="nav-label">Activity</span>
+            </button>
+            <button class="nav-item" data-tab="migration">
+                <span class="nav-icon">🦅</span>
+                <span class="nav-label">Migration</span>
+            </button>
+            <button class="nav-item" data-tab="feeding">
+                <span class="nav-icon">🌻</span>
+                <span class="nav-label">Feeding</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="sidebar-btn" id="alerts-toggle" title="Alert Settings">
+                <span class="nav-icon">🔔</span>
+                <span class="nav-label">Alerts</span>
+            </button>
+            <button class="sidebar-btn" id="settings-toggle" title="Settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <h2 class="page-title" id="page-title">📊 Overview</h2>
+            </div>
+            <div class="filters">
+                <select id="date-range-filter" class="filter-select">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">Past Week</option>
+                    <option value="month">Past Month</option>
+                </select>
+                <input type="text" id="species-search" class="filter-input" placeholder="Search species...">
+                <span id="filter-info" class="filter-info" style="display: none;"></span>
+            </div>
+            <div class="top-bar-actions">
+                <button id="refresh-btn" class="btn-icon" title="Refresh data">🔄</button>
+                <button id="export-csv-btn" class="btn-icon" title="Export CSV">📥</button>
+            </div>
+        </div>
+
+        <!-- Content Container -->
+        <div class="content-wrapper">
+            <!-- Quick Stats Bar -->
+            <div class="quick-stats-bar">
+                <div class="quick-stat">
+                    <span class="quick-stat-icon">🦜</span>
+                    <div class="quick-stat-content">
+                        <span class="quick-stat-value" id="quick-stat-total-species">-</span>
+                        <span class="quick-stat-label">Total Species</span>
+                    </div>
+                </div>
+                <div class="quick-stat">
+                    <span class="quick-stat-icon">📊</span>
+                    <div class="quick-stat-content">
+                        <span class="quick-stat-value" id="quick-stat-total-detections">-</span>
+                        <span class="quick-stat-label">Total Detections</span>
+                    </div>
+                </div>
+                <div class="quick-stat">
+                    <span class="quick-stat-icon">🌅</span>
+                    <div class="quick-stat-content">
+                        <span class="quick-stat-value" id="quick-stat-today-species">-</span>
+                        <span class="quick-stat-label">Today's Species</span>
+                    </div>
+                </div>
+                <div class="quick-stat">
+                    <span class="quick-stat-icon">⏰</span>
+                    <div class="quick-stat-content">
+                        <span class="quick-stat-value" id="quick-stat-today-detections">-</span>
+                        <span class="quick-stat-label">Today's Detections</span>
+                    </div>
+                </div>
+            </div>
+
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="grid">
+                <!-- Comparison Cards (NEW) -->
+                <div class="col-12">
+                    <div id="comparison-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Daily Activity Chart -->
+                <div class="col-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Daily Activity Trend</div>
+                                <div class="card-subtitle">Unique species per day (last 30 days)</div>
+                            </div>
+                        </div>
+                        <div class="chart-container-large">
+                            <canvas id="daily-activity-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Species -->
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Top 10 Species</div>
+                        </div>
+                        <div class="species-list" id="top-species-list">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading species data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Active Species -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🐦 Today's Active Species</div>
+                                <div class="card-subtitle">Species detected today</div>
+                            </div>
+                        </div>
+                        <div id="today-species-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading today's species...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Detections Table -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🕐 Recent Detections</div>
+                                <div class="card-subtitle">Latest bird detections</div>
+                            </div>
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-limit="10">10</button>
+                                <button class="filter-btn" data-limit="25">25</button>
+                                <button class="filter-btn" data-limit="50">50</button>
+                                <button class="filter-btn" data-limit="100">100</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="detections-table" id="recent-detections-table">
+                                <thead>
+                                    <tr>
+                                        <th>Species</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-detections-tbody">
+                                    <tr>
+                                        <td colspan="4">
+                                            <div class="loading">
+                                                <div class="spinner"></div>
+                                                <p>Loading recent detections...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diversity Metrics (NEW) -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📊 Diversity Metrics</div>
+                                <div class="card-subtitle">Statistical measures of species diversity</div>
+                            </div>
+                        </div>
+                        <div id="diversity-metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; padding: 1rem;">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hourly Pattern -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Hourly Activity Pattern</div>
+                                <div class="card-subtitle">Average detections by hour of day</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="hourly-pattern-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Species Diversity -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Species Distribution</div>
+                                <div class="card-subtitle">Top 10 species by detections</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="species-distribution-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Trend -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Monthly Activity Trend</div>
+                                <div class="card-subtitle">Detections by month</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="monthly-trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Species Tab -->
+        <div id="species-tab" class="tab-content">
+            <div class="grid">
+                <!-- Species Gallery -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">
+                                    🦜 All Detected Species
+                                    <button class="collapse-toggle" onclick="toggleGalleryCollapse()" id="gallery-collapse-btn" aria-label="Toggle gallery">▼</button>
+                                </div>
+                                <div class="card-subtitle">Browse, sort, and filter all detected species</div>
+                            </div>
+                            <div class="gallery-controls" id="gallery-controls">
+                                <select id="gallery-sort" class="filter-select">
+                                    <option value="detections">Most Detections</option>
+                                    <option value="confidence">Highest Confidence</option>
+                                    <option value="recent">Most Recent</option>
+                                    <option value="alphabetical">Alphabetical</option>
+                                </select>
+                                <input type="range" id="confidence-filter" min="0" max="100" value="0" class="confidence-slider">
+                                <span id="confidence-label">Min Confidence: 0%</span>
+                            </div>
+                        </div>
+                        <div id="photo-gallery" class="photo-gallery">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading gallery...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detection Calendar Heatmap (NEW) -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📅 Detection Calendar</div>
+                                <div class="card-subtitle">Detection frequency over the last 90 days</div>
+                            </div>
+                        </div>
+                        <div class="chart-container-large">
+                            <canvas id="calendar-heatmap-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confidence Distribution (NEW) -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🎯 Confidence Distribution</div>
+                                <div class="card-subtitle">Detection confidence levels</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="confidence-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Year-over-Year Comparison (NEW) -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📈 Year-over-Year</div>
+                                <div class="card-subtitle">Species and detections by year</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="year-over-year-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time-to-Next-Detection Predictions -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">⏱️ Next Detection Predictions</div>
+                        </div>
+                        <div id="next-detection-container" style="padding: 1rem;">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Calculating predictions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Migration Tab -->
+        <div id="migration-tab" class="tab-content">
+            <div class="grid">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🦅 Migration Calendar & Predictions</div>
+                                <div class="card-subtitle">AI-powered predictions based on your detection history</div>
+                            </div>
+                        </div>
+                        <div id="migration-calendar">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Analyzing migration patterns...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Tab -->
+        <div id="activity-tab" class="tab-content">
+            <div class="grid">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Weekly Activity Heatmap</div>
+                        </div>
+                        <div class="chart-container-large">
+                            <canvas id="weekly-heatmap-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hour × Day Heatmap (NEW) -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🕐 Hour × Day Activity Pattern</div>
+                                <div class="card-subtitle">Activity by day of week and time of day</div>
+                            </div>
+                        </div>
+                        <div class="chart-container-large">
+                            <canvas id="hour-day-heatmap-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Peak Activity Predictions -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🔮 Peak Activity Predictions (Next 7 Days)</div>
+                        </div>
+                        <div id="peak-predictions-container" style="padding: 1rem;">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Analyzing patterns...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Recent Activity Timeline</div>
+                        </div>
+                        <div class="timeline" id="activity-timeline">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Rare Visitors</div>
+                        </div>
+                        <div class="species-list" id="rare-species-list">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights Tab (Daily/Actionable) -->
+        <div id="insights-tab" class="tab-content">
+            <div class="grid">
+                <!-- Left Column: Alerts & Anomalies -->
+                <div class="col-6">
+                    <!-- Activity Anomalies -->
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">⚡ Activity Anomalies</div>
+                        </div>
+                        <div id="activity-anomalies-container" class="compact-content">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Missing Species & Predictive Alerts Combined -->
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">⏰ Species Status</div>
+                        </div>
+                        <div class="compact-content">
+                            <div class="subsection">
+                                <h4 class="subsection-title">Missing Regulars</h4>
+                                <div id="missing-species-container"></div>
+                            </div>
+                            <div class="subsection">
+                                <h4 class="subsection-title">Late Arrivals</h4>
+                                <div id="predictive-alerts-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Recommendations & Timing -->
+                <div class="col-6">
+                    <!-- Best Watch Times -->
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">⏰ Best Watch Times</div>
+                        </div>
+                        <div id="best-watch-times-container" class="compact-content">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Personalized Recommendations -->
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">💡 Recommendations</div>
+                        </div>
+                        <div id="recommendations-container" class="compact-content">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- AI-Powered Insights -->
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🤖 AI Insights</div>
+                        </div>
+                        <div id="insights-list" class="compact-content">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Generating insights...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trends Tab (Historical Patterns) -->
+        <div id="trends-tab" class="tab-content">
+            <div class="grid">
+                <!-- Top Row: Visualizations -->
+                <div class="col-6">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">📅 Species Timeline</div>
+                        </div>
+                        <div id="species-timeline-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">📊 Activity Heatmap</div>
+                        </div>
+                        <div id="heatmap-calendar-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <!-- Middle Row: Stats & Predictions -->
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">📊 Year-over-Year</div>
+                        </div>
+                        <div id="year-over-year-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🔥 Streaks</div>
+                        </div>
+                        <div id="species-streaks-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🔮 7-Day Forecast</div>
+                        </div>
+                        <div id="enhanced-predictions-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Diversity Chart -->
+                <div class="col-12">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">📈 Diversity Trends</div>
+                            <select id="diversity-period-select" class="filter-select" style="width: auto;">
+                                <option value="daily">Last 30 Days</option>
+                                <option value="weekly">Last 12 Weeks</option>
+                                <option value="monthly">Last 12 Months</option>
+                            </select>
+                        </div>
+                        <div class="chart-container-small">
+                            <canvas id="diversity-trends-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab (Deep Dive) -->
+        <div id="analytics-tab" class="tab-content">
+            <div class="grid">
+                <!-- Top Row: Three Column Layout -->
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">💎 Rarity Scores</div>
+                        </div>
+                        <div id="rarity-scores-container" class="compact-content"></div>
+                    </div>
+
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🏆 Milestones</div>
+                        </div>
+                        <div id="milestones-container" class="compact-content"></div>
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🔗 Co-occurrence</div>
+                        </div>
+                        <div id="cooccurrence-container" class="compact-content">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Analyzing...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="weather-impact-widget"></div>
+                </div>
+
+                <div class="col-4">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🎈 Bubble Chart</div>
+                        </div>
+                        <div id="bubble-chart-container" class="compact-content" style="min-height: 300px;"></div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Comparison Tool -->
+                <div class="col-12">
+                    <div class="card compact-card">
+                        <div class="card-header">
+                            <div class="card-title">🆚 Species Comparison</div>
+                        </div>
+                        <div id="species-comparison-container" class="compact-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feeding Tab -->
+        <div id="feeding-tab" class="tab-content">
+            <div class="grid">
+                <!-- Seasonal Recommendations -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🌻 Seasonal Feeding Recommendations</div>
+                                <div class="card-subtitle">Best foods for this time of year</div>
+                            </div>
+                        </div>
+                        <div id="seasonal-feeding">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading recommendations...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Species-Specific Feeding Guide -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🐦 Feeding Guide for Your Birds</div>
+                        </div>
+                        <div id="species-feeding-guide">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading species preferences...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Species Detail Modal -->
+    <div id="species-modal" class="modal">
+        <div class="species-modal-content">
+            <!-- Content populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="modal-close" id="settings-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-section">
+                    <h3>Appearance</h3>
+                    <div class="setting-item">
+                        <label for="theme-select">Theme</label>
+                        <select id="theme-select" class="setting-select">
+                            <option value="auto">Auto (follow system)</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                        <p class="setting-description">Choose theme or automatically match your device settings</p>
+                    </div>
+                </div>
+
+                <div class="setting-section">
+                    <h3>Data Loading</h3>
+                    <div class="setting-item">
+                        <label for="initial-load-limit">Initial Load Limit</label>
+                        <select id="initial-load-limit" class="setting-select">
+                            <option value="500">500 - Fast (~5 seconds)</option>
+                            <option value="1000">1,000 - Quick (~10 seconds)</option>
+                            <option value="2000">2,000 - Balanced (~20 seconds)</option>
+                            <option value="5000" selected>5,000 - Comprehensive (~30 seconds)</option>
+                            <option value="10000">10,000 - Extensive (~60 seconds)</option>
+                            <option value="20000">20,000 - Very Complete (~2 minutes)</option>
+                            <option value="100000">100,000 - Everything (slow!)</option>
+                        </select>
+                        <p class="setting-description">
+                            Number of detections to load on startup. Higher values take longer but provide more complete historical data.
+                            Incremental refreshes (every 60s) always fetch only new detections.
+                        </p>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <strong>Current Status:</strong>
+                            <div id="current-detection-count">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="settings-cancel">Cancel</button>
+                <button class="btn-primary" id="settings-save">Save & Reload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Settings Modal -->
+    <div id="alerts-modal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h2>🔔 Alert Settings</h2>
+                <button class="modal-close" id="alerts-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Enable Alerts -->
+                <div class="setting-section">
+                    <h3>General</h3>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alerts-enabled" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            Enable Alerts
+                        </label>
+                        <p class="setting-description">Receive notifications for bird detections</p>
+                    </div>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alerts-sound" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            Sound Enabled
+                        </label>
+                        <p class="setting-description">Play sound with notifications</p>
+                    </div>
+                    <div class="setting-item">
+                        <label for="alerts-cooldown">Cooldown Period</label>
+                        <select id="alerts-cooldown" class="setting-select">
+                            <option value="5">5 minutes</option>
+                            <option value="15">15 minutes</option>
+                            <option value="30" selected>30 minutes</option>
+                            <option value="60">1 hour</option>
+                            <option value="120">2 hours</option>
+                        </select>
+                        <p class="setting-description">Minimum time between alerts for the same species</p>
+                    </div>
+                </div>
+
+                <!-- Alert Types -->
+                <div class="setting-section">
+                    <h3>Alert Types</h3>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alert-watched" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            Watched Species
+                        </label>
+                        <p class="setting-description">Alert when a species on your watch list is detected</p>
+                    </div>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alert-rare" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            Rare Species
+                        </label>
+                        <p class="setting-description">Alert for species with 3 or fewer detections</p>
+                    </div>
+                    <div class="setting-item">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="alert-new" class="toggle-checkbox">
+                            <span class="toggle-switch"></span>
+                            New Species
+                        </label>
+                        <p class="setting-description">Alert when a species is detected for the first time</p>
+                    </div>
+                </div>
+
+                <!-- Watched Species -->
+                <div class="setting-section">
+                    <h3>Watched Species (<span id="watched-count">0</span>)</h3>
+                    <button class="btn-primary" id="add-watched-species" style="margin-bottom: 1rem;">
+                        ➕ Add Species to Watch
+                    </button>
+                    <div id="watched-species-list" class="watched-species-list">
+                        <p class="empty-state-text">No species on watch list</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="alerts-cancel">Cancel</button>
+                <button class="btn-primary" id="alerts-save">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Period Species Modal -->
+    <div id="period-species-modal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <!-- Content populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center;">
+            <div class="spinner" style="width: 48px; height: 48px; margin: 0 auto 1rem;"></div>
+            <p>Loading bird data...</p>
+        </div>
+    </div>
+
+    <!-- Error Container -->
+    <div id="error-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 400px;"></div>
+
+    <!-- Application Scripts - ES6 Modules -->
+    <script type="module" src="js/main.js?v=2024103102"></script>
+</body>
+</html>
