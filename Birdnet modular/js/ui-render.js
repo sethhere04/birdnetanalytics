@@ -7,6 +7,7 @@ import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats, g
 import { getCurrentSeason, getSeasonalRecommendations, getSpeciesFeedingData, getFeedingDataForSpecies } from './feeding.js';
 import { analyzeMigrationPatterns } from './migration.js';
 import { parseDetectionDate } from './api.js';
+import { estimateIndividualBirds } from './audio-analysis.js';
 import * as AudioPlayer from './audio-player.js';
 
 // Store species images loaded from API
@@ -83,6 +84,9 @@ export function renderOverview(analytics, speciesData, detections) {
 
     // NEW: Render diversity metrics
     renderDiversityMetrics(speciesData);
+
+    // Set up individual birds analysis button
+    setupIndividualBirdsAnalysis(detections);
 }
 
 /**
@@ -2344,5 +2348,117 @@ export function renderPersonalizedRecommendations(detections, speciesData) {
     });
 
     html += '</div>';
+    container.innerHTML = html;
+}
+
+
+/**
+ * Set up individual birds analysis button
+ */
+function setupIndividualBirdsAnalysis(detections) {
+    const btn = document.getElementById("analyze-individuals-btn");
+    if (!btn) return;
+
+    // Remove old listener by cloning
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener("click", async () => {
+        await runIndividualBirdsAnalysis(detections);
+    });
+}
+
+/**
+ * Run individual birds analysis
+ */
+async function runIndividualBirdsAnalysis(detections) {
+    const btn = document.getElementById("analyze-individuals-btn");
+    const container = document.getElementById("individual-birds-container");
+
+    if (!btn || !container) return;
+
+    // Disable button and show progress
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-icon">⏳</span> Analyzing...`;
+
+    container.innerHTML = `
+        <div class="analysis-progress">
+            <div class="progress-spinner"></div>
+            <p class="progress-text">Analyzing audio recordings...</p>
+            <p class="progress-text" style="font-size: 0.75rem; margin-top: 0.5rem;">This may take a minute</p>
+        </div>
+    `;
+
+    try {
+        console.log("🎵 Starting individual bird analysis...");
+        const estimates = await estimateIndividualBirds(detections);
+        console.log("✅ Analysis complete:", estimates);
+
+        renderIndividualBirdsResults(estimates);
+
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = `<span class="btn-icon">🔬</span> Re-analyze`;
+    } catch (error) {
+        console.error("❌ Error analyzing individuals:", error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">⚠️</div>
+                <p>Error analyzing audio recordings</p>
+                <p class="empty-subtext">${error.message}</p>
+            </div>
+        `;
+
+        btn.disabled = false;
+        btn.innerHTML = `<span class="btn-icon">🔬</span> Try Again`;
+    }
+}
+
+/**
+ * Render individual birds analysis results
+ */
+function renderIndividualBirdsResults(estimates) {
+    const container = document.getElementById("individual-birds-container");
+    if (!container) return;
+
+    const sortedSpecies = Object.entries(estimates).sort((a, b) => b[1] - a[1]);
+
+    if (sortedSpecies.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🦜</div>
+                <p>No audio data available for analysis</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `<div class="individual-birds-grid">`;
+
+    sortedSpecies.forEach(([species, count]) => {
+        html += `
+            <div class="individual-bird-card">
+                <div class="individual-bird-species">${species}</div>
+                <div class="individual-bird-count">${count}</div>
+                <div class="individual-bird-label">Estimated Individual${count !== 1 ? "s" : ""}</div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+
+    // Add summary
+    const totalIndividuals = sortedSpecies.reduce((sum, [, count]) => sum + count, 0);
+    const totalSpecies = sortedSpecies.length;
+
+    html += `
+        <div style="padding: 1rem; border-top: 1px solid var(--border); margin-top: 1rem; text-align: center;">
+            <p style="color: var(--text-light); font-size: 0.875rem;">
+                Estimated <strong>${totalIndividuals}</strong> individual bird${totalIndividuals !== 1 ? "s" : ""} 
+                across <strong>${totalSpecies}</strong> species using acoustic fingerprinting
+            </p>
+        </div>
+    `;
+
     container.innerHTML = html;
 }
