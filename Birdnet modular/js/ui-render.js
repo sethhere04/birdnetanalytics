@@ -2363,15 +2363,15 @@ function setupIndividualBirdsAnalysis(detections) {
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
 
-    newBtn.addEventListener("click", async () => {
-        await runIndividualBirdsAnalysis(detections);
+    newBtn.addEventListener("click", () => {
+        runIndividualBirdsAnalysis(detections);
     });
 }
 
 /**
  * Run individual birds analysis
  */
-async function runIndividualBirdsAnalysis(detections) {
+function runIndividualBirdsAnalysis(detections) {
     const btn = document.getElementById("analyze-individuals-btn");
     const container = document.getElementById("individual-birds-container");
 
@@ -2384,34 +2384,37 @@ async function runIndividualBirdsAnalysis(detections) {
     container.innerHTML = `
         <div class="analysis-progress">
             <div class="progress-spinner"></div>
-            <p class="progress-text">Analyzing audio recordings...</p>
-            <p class="progress-text" style="font-size: 0.75rem; margin-top: 0.5rem;">This may take a minute</p>
+            <p class="progress-text">Analyzing detection patterns...</p>
+            <p class="progress-text" style="font-size: 0.75rem; margin-top: 0.5rem;">Clustering by temporal patterns</p>
         </div>
     `;
 
-    try {
-        console.log("🎵 Starting individual bird analysis...");
-        const estimates = await estimateIndividualBirds(detections);
-        console.log("✅ Analysis complete:", estimates);
+    // Use setTimeout to allow UI to update
+    setTimeout(() => {
+        try {
+            console.log("🎵 Starting individual bird analysis...");
+            const estimates = estimateIndividualBirds(detections);
+            console.log("✅ Analysis complete:", estimates);
 
-        renderIndividualBirdsResults(estimates);
+            renderIndividualBirdsResults(estimates);
 
-        // Re-enable button
-        btn.disabled = false;
-        btn.innerHTML = `<span class="btn-icon">🔬</span> Re-analyze`;
-    } catch (error) {
-        console.error("❌ Error analyzing individuals:", error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">⚠️</div>
-                <p>Error analyzing audio recordings</p>
-                <p class="empty-subtext">${error.message}</p>
-            </div>
-        `;
+            // Re-enable button
+            btn.disabled = false;
+            btn.innerHTML = `<span class="btn-icon">🔬</span> Re-analyze`;
+        } catch (error) {
+            console.error("❌ Error analyzing individuals:", error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <p>Error analyzing detections</p>
+                    <p class="empty-subtext">${error.message}</p>
+                </div>
+            `;
 
-        btn.disabled = false;
-        btn.innerHTML = `<span class="btn-icon">🔬</span> Try Again`;
-    }
+            btn.disabled = false;
+            btn.innerHTML = `<span class="btn-icon">🔬</span> Try Again`;
+        }
+    }, 100);
 }
 
 /**

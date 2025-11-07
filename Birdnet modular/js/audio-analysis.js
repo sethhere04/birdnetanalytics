@@ -6,29 +6,42 @@
 import { API_CONFIG } from './api.js';
 
 /**
- * Fetch and decode audio file for a detection
- * @param {number} detectionId - Detection ID from API
- * @returns {Promise<AudioBuffer>} - Decoded audio buffer
+ * Extract metadata-based features from detection
+ * Since CORS prevents audio access, use temporal and metadata patterns
+ * @param {Object} detection - Detection object
+ * @returns {Object} - Feature vector
  */
-export async function fetchAudioBuffer(detectionId) {
-    const audioUrl = `${API_CONFIG.baseUrl}/audio/${detectionId}`;
+function extractMetadataFeatures(detection) {
+    const beginTime = new Date(detection.beginTime);
+    const endTime = new Date(detection.endTime);
+    const duration = (endTime - beginTime) / 1000; // seconds
 
-    try {
-        const response = await fetch(audioUrl);
-        if (!response.ok) {
-            console.warn(`Audio not available for detection ${detectionId}`);
-            return null;
-        }
+    return {
+        // Temporal features
+        hourOfDay: beginTime.getHours(),
+        timeOfDay: getTimeOfDay(beginTime.getHours()),
+        dayOfWeek: beginTime.getDay(),
+        duration: duration,
 
-        const arrayBuffer = await response.arrayBuffer();
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        // Detection metadata
+        confidence: detection.confidence || 0,
 
-        return audioBuffer;
-    } catch (error) {
-        console.error(`Error fetching audio for detection ${detectionId}:`, error);
-        return null;
-    }
+        // Create a simple fingerprint
+        timestamp: beginTime.getTime(),
+        beginTime: detection.beginTime,
+        endTime: detection.endTime
+    };
+}
+
+/**
+ * Get time of day category
+ */
+function getTimeOfDay(hour) {
+    if (hour >= 5 && hour < 8) return 'dawn';
+    if (hour >= 8 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 20) return 'dusk';
+    return 'night';
 }
 
 /**
@@ -264,73 +277,67 @@ export function calculateSimilarity(features1, features2) {
 }
 
 /**
- * Cluster detections by acoustic similarity to estimate individual birds
+ * Cluster detections by temporal and metadata patterns to estimate individual birds
  * @param {Array} detections - Array of detections for a species
- * @param {number} similarityThreshold - Threshold for considering two detections from same bird (0-1)
- * @returns {Promise<Array>} - Array of clusters (groups of detections from same individual)
+ * @returns {Array} - Array of clusters (groups of detections from same individual)
  */
-export async function clusterDetectionsByAudio(detections, similarityThreshold = 0.75) {
-    console.log(`🎵 Starting audio analysis for ${detections.length} detections...`);
+function clusterDetectionsByTemporal(detections) {
+    console.log(`🎵 Analyzing ${detections.length} detections using temporal patterns...`);
 
-    // Fetch and analyze audio for each detection
-    const analyzedDetections = [];
-    for (let i = 0; i < Math.min(detections.length, 50); i++) { // Limit to 50 for performance
-        const detection = detections[i];
-        const audioBuffer = await fetchAudioBuffer(detection.id);
+    // Extract features for all detections
+    const analyzedDetections = detections.map(detection => ({
+        detection,
+        features: extractMetadataFeatures(detection)
+    }));
 
-        if (audioBuffer) {
-            const features = extractAcousticFeatures(audioBuffer);
-            if (features) {
-                analyzedDetections.push({
-                    detection,
-                    features
-                });
-                console.log(`✓ Analyzed detection ${detection.id}`);
-            }
-        }
-    }
+    // Sort by timestamp
+    analyzedDetections.sort((a, b) => a.features.timestamp - b.features.timestamp);
 
-    console.log(`📊 Analyzed ${analyzedDetections.length} detections, clustering...`);
-
-    // Cluster using similarity threshold
     const clusters = [];
     const assigned = new Set();
 
+    // Time-based clustering with adaptive thresholds
     for (let i = 0; i < analyzedDetections.length; i++) {
         if (assigned.has(i)) continue;
 
         const cluster = [analyzedDetections[i]];
         assigned.add(i);
 
-        // Find similar detections
+        // Look for detections that are likely the same bird
         for (let j = i + 1; j < analyzedDetections.length; j++) {
             if (assigned.has(j)) continue;
 
-            const similarity = calculateSimilarity(
-                analyzedDetections[i].features,
-                analyzedDetections[j].features
-            );
+            const timeDiff = (analyzedDetections[j].features.timestamp - analyzedDetections[i].features.timestamp) / 1000; // seconds
 
-            if (similarity >= similarityThreshold) {
+            // Same bird if:
+            // - Within 30 seconds (rapid succession)
+            // - OR within 5 minutes AND same time of day
+            if (timeDiff < 30 ||
+                (timeDiff < 300 && analyzedDetections[i].features.timeOfDay === analyzedDetections[j].features.timeOfDay)) {
                 cluster.push(analyzedDetections[j]);
                 assigned.add(j);
+            } else if (timeDiff > 600) {
+                // Stop looking if gap is too large
+                break;
             }
         }
 
         clusters.push(cluster);
     }
 
-    console.log(`🎯 Found ${clusters.length} distinct individuals`);
+    console.log(`🎯 Found ${clusters.length} distinct detection sessions (estimated individuals)`);
 
     return clusters;
 }
 
 /**
- * Estimate individual birds for each species
+ * Estimate individual birds for each species using temporal patterns
  * @param {Array} detections - All detections
- * @returns {Promise<Object>} - Map of species name to estimated individual count
+ * @returns {Object} - Map of species name to estimated individual count
  */
-export async function estimateIndividualBirds(detections) {
+export function estimateIndividualBirds(detections) {
+    console.log(`🔬 Starting individual bird estimation for ${detections.length} detections...`);
+
     const speciesGroups = {};
 
     // Group by species
@@ -343,22 +350,37 @@ export async function estimateIndividualBirds(detections) {
     });
 
     const estimates = {};
+    const clusterDetails = {};
 
-    // Analyze each species (limit to species with multiple detections)
+    // Analyze each species
     for (const [species, speciesDetections] of Object.entries(speciesGroups)) {
         if (speciesDetections.length < 2) {
             estimates[species] = 1; // Only one detection = one bird
+            clusterDetails[species] = {
+                clusters: 1,
+                detections: speciesDetections.length,
+                avgSessionSize: 1
+            };
             continue;
         }
 
-        // Sort by time (most recent first) and take reasonable subset
+        // Use all detections (sorted by time)
         const sortedDetections = speciesDetections
-            .sort((a, b) => new Date(b.beginTime) - new Date(a.beginTime))
-            .slice(0, 20); // Analyze up to 20 recent detections
+            .sort((a, b) => new Date(a.beginTime) - new Date(b.beginTime));
 
-        const clusters = await clusterDetectionsByAudio(sortedDetections);
+        const clusters = clusterDetectionsByTemporal(sortedDetections);
+        const avgSessionSize = clusters.reduce((sum, c) => sum + c.length, 0) / clusters.length;
+
         estimates[species] = clusters.length;
+        clusterDetails[species] = {
+            clusters: clusters.length,
+            detections: sortedDetections.length,
+            avgSessionSize: Math.round(avgSessionSize * 10) / 10
+        };
     }
+
+    console.log(`✅ Estimation complete:`, estimates);
+    console.log(`📊 Cluster details:`, clusterDetails);
 
     return estimates;
 }
