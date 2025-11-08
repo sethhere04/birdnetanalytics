@@ -2353,7 +2353,7 @@ export function renderPersonalizedRecommendations(detections, speciesData) {
 
 
 /**
- * Set up individual birds analysis button
+ * Set up individual birds analysis button and auto-run analysis
  */
 function setupIndividualBirdsAnalysis(detections) {
     const btn = document.getElementById("analyze-individuals-btn");
@@ -2366,6 +2366,9 @@ function setupIndividualBirdsAnalysis(detections) {
     newBtn.addEventListener("click", () => {
         runIndividualBirdsAnalysis(detections);
     });
+
+    // Automatically run analysis since temporal method is fast
+    runIndividualBirdsAnalysis(detections);
 }
 
 /**
@@ -2381,14 +2384,11 @@ async function runIndividualBirdsAnalysis(detections) {
     btn.disabled = true;
     btn.innerHTML = `<span class="btn-icon">⏳</span> Analyzing...`;
 
-    const { USE_AUDIO_FINGERPRINTING } = await import('./audio-analysis.js');
-    const analysisMethod = USE_AUDIO_FINGERPRINTING ? 'audio fingerprinting' : 'temporal patterns';
-
     container.innerHTML = `
         <div class="analysis-progress">
             <div class="progress-spinner"></div>
             <p class="progress-text">Analyzing detection patterns...</p>
-            <p class="progress-text" style="font-size: 0.75rem; margin-top: 0.5rem;">Using ${analysisMethod}</p>
+            <p class="progress-text" style="font-size: 0.75rem; margin-top: 0.5rem;">Using temporal pattern analysis</p>
         </div>
     `;
 
