@@ -661,7 +661,7 @@ function updateQuickStats(analytics, species, detections) {
     today.setHours(0, 0, 0, 0);
 
     const todayDetections = detections?.filter(d => {
-        const detectionDate = parseDetectionDate(d.date);
+        const detectionDate = parseDetectionDate(d);
         detectionDate.setHours(0, 0, 0, 0);
         return detectionDate.getTime() === today.getTime();
     }) || [];

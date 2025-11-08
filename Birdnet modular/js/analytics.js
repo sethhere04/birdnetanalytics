@@ -232,7 +232,8 @@ export function getTodayActiveSpecies(detections, speciesData) {
 
     const todayDetections = detections.filter(d => {
         const date = parseDetectionDate(d);
-        return date >= today;
+        date.setHours(0, 0, 0, 0);
+        return date.getTime() === today.getTime();
     });
 
     const speciesCounts = {};
