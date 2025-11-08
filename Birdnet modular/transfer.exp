@@ -1,0 +1,20 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+
+# Transfer all files from current directory
+cd [file dirname [info script]]
+spawn bash -c "scp -o StrictHostKeyChecking=no -r ./* seth@192.168.68.129:/home/seth/birdnet-modular/"
+
+expect {
+    "password:" {
+        send "dabombisback\r"
+        exp_continue
+    }
+    "100%" {
+        exp_continue
+    }
+    eof
+}
+
+puts "\n✅ Transfer complete!"
