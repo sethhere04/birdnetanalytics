@@ -5,9 +5,43 @@
 
 import { API_CONFIG } from './api.js';
 
+// Configuration: Set to true to use CORS proxy for audio fingerprinting
+// Set to false to use temporal analysis only
+export const USE_AUDIO_FINGERPRINTING = true;
+
+// CORS Proxy URL (change if proxy runs on different port)
+const AUDIO_PROXY_URL = 'http://localhost:3000/audio';
+
+/**
+ * Fetch and decode audio file for a detection
+ * Uses CORS proxy to bypass cross-origin restrictions
+ * @param {number} detectionId - Detection ID from API
+ * @returns {Promise<AudioBuffer>} - Decoded audio buffer
+ */
+export async function fetchAudioBuffer(detectionId) {
+    const audioUrl = `${AUDIO_PROXY_URL}/${detectionId}`;
+
+    try {
+        const response = await fetch(audioUrl);
+        if (!response.ok) {
+            console.warn(`Audio not available for detection ${detectionId}`);
+            return null;
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+        return audioBuffer;
+    } catch (error) {
+        console.error(`Error fetching audio for detection ${detectionId}:`, error);
+        return null;
+    }
+}
+
 /**
  * Extract metadata-based features from detection
- * Since CORS prevents audio access, use temporal and metadata patterns
+ * Fallback when audio is not available
  * @param {Object} detection - Detection object
  * @returns {Object} - Feature vector
  */
@@ -277,6 +311,68 @@ export function calculateSimilarity(features1, features2) {
 }
 
 /**
+ * Cluster detections by acoustic similarity to estimate individual birds
+ * @param {Array} detections - Array of detections for a species
+ * @param {number} similarityThreshold - Threshold for considering two detections from same bird (0-1)
+ * @returns {Promise<Array>} - Array of clusters (groups of detections from same individual)
+ */
+async function clusterDetectionsByAudio(detections, similarityThreshold = 0.75) {
+    console.log(`🎵 Starting audio analysis for ${detections.length} detections...`);
+
+    // Fetch and analyze audio for each detection
+    const analyzedDetections = [];
+    for (let i = 0; i < Math.min(detections.length, 50); i++) { // Limit to 50 for performance
+        const detection = detections[i];
+        const audioBuffer = await fetchAudioBuffer(detection.id);
+
+        if (audioBuffer) {
+            const features = extractAcousticFeatures(audioBuffer);
+            if (features) {
+                analyzedDetections.push({
+                    detection,
+                    features
+                });
+                console.log(`✓ Analyzed detection ${detection.id}`);
+            }
+        }
+    }
+
+    console.log(`📊 Analyzed ${analyzedDetections.length} detections, clustering...`);
+
+    // Cluster using similarity threshold
+    const clusters = [];
+    const assigned = new Set();
+
+    for (let i = 0; i < analyzedDetections.length; i++) {
+        if (assigned.has(i)) continue;
+
+        const cluster = [analyzedDetections[i]];
+        assigned.add(i);
+
+        // Find similar detections
+        for (let j = i + 1; j < analyzedDetections.length; j++) {
+            if (assigned.has(j)) continue;
+
+            const similarity = calculateSimilarity(
+                analyzedDetections[i].features,
+                analyzedDetections[j].features
+            );
+
+            if (similarity >= similarityThreshold) {
+                cluster.push(analyzedDetections[j]);
+                assigned.add(j);
+            }
+        }
+
+        clusters.push(cluster);
+    }
+
+    console.log(`🎯 Found ${clusters.length} distinct individuals using audio fingerprinting`);
+
+    return clusters;
+}
+
+/**
  * Cluster detections by temporal and metadata patterns to estimate individual birds
  * @param {Array} detections - Array of detections for a species
  * @returns {Array} - Array of clusters (groups of detections from same individual)
@@ -331,12 +427,13 @@ function clusterDetectionsByTemporal(detections) {
 }
 
 /**
- * Estimate individual birds for each species using temporal patterns
+ * Estimate individual birds for each species using audio fingerprinting or temporal patterns
  * @param {Array} detections - All detections
- * @returns {Object} - Map of species name to estimated individual count
+ * @returns {Promise<Object>} - Map of species name to estimated individual count
  */
-export function estimateIndividualBirds(detections) {
+export async function estimateIndividualBirds(detections) {
     console.log(`🔬 Starting individual bird estimation for ${detections.length} detections...`);
+    console.log(`📡 Audio fingerprinting: ${USE_AUDIO_FINGERPRINTING ? 'ENABLED' : 'DISABLED'}`);
 
     const speciesGroups = {};
 
@@ -359,7 +456,8 @@ export function estimateIndividualBirds(detections) {
             clusterDetails[species] = {
                 clusters: 1,
                 detections: speciesDetections.length,
-                avgSessionSize: 1
+                avgSessionSize: 1,
+                method: 'single-detection'
             };
             continue;
         }
@@ -368,14 +466,32 @@ export function estimateIndividualBirds(detections) {
         const sortedDetections = speciesDetections
             .sort((a, b) => new Date(a.beginTime) - new Date(b.beginTime));
 
-        const clusters = clusterDetectionsByTemporal(sortedDetections);
+        // Choose clustering method based on configuration
+        let clusters;
+        let method;
+
+        if (USE_AUDIO_FINGERPRINTING) {
+            try {
+                clusters = await clusterDetectionsByAudio(sortedDetections);
+                method = 'audio-fingerprinting';
+            } catch (error) {
+                console.warn(`Audio fingerprinting failed for ${species}, falling back to temporal analysis:`, error);
+                clusters = clusterDetectionsByTemporal(sortedDetections);
+                method = 'temporal-fallback';
+            }
+        } else {
+            clusters = clusterDetectionsByTemporal(sortedDetections);
+            method = 'temporal';
+        }
+
         const avgSessionSize = clusters.reduce((sum, c) => sum + c.length, 0) / clusters.length;
 
         estimates[species] = clusters.length;
         clusterDetails[species] = {
             clusters: clusters.length,
             detections: sortedDetections.length,
-            avgSessionSize: Math.round(avgSessionSize * 10) / 10
+            avgSessionSize: Math.round(avgSessionSize * 10) / 10,
+            method: method
         };
     }
 

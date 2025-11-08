@@ -2371,7 +2371,7 @@ function setupIndividualBirdsAnalysis(detections) {
 /**
  * Run individual birds analysis
  */
-function runIndividualBirdsAnalysis(detections) {
+async function runIndividualBirdsAnalysis(detections) {
     const btn = document.getElementById("analyze-individuals-btn");
     const container = document.getElementById("individual-birds-container");
 
@@ -2381,19 +2381,22 @@ function runIndividualBirdsAnalysis(detections) {
     btn.disabled = true;
     btn.innerHTML = `<span class="btn-icon">⏳</span> Analyzing...`;
 
+    const { USE_AUDIO_FINGERPRINTING } = await import('./audio-analysis.js');
+    const analysisMethod = USE_AUDIO_FINGERPRINTING ? 'audio fingerprinting' : 'temporal patterns';
+
     container.innerHTML = `
         <div class="analysis-progress">
             <div class="progress-spinner"></div>
             <p class="progress-text">Analyzing detection patterns...</p>
-            <p class="progress-text" style="font-size: 0.75rem; margin-top: 0.5rem;">Clustering by temporal patterns</p>
+            <p class="progress-text" style="font-size: 0.75rem; margin-top: 0.5rem;">Using ${analysisMethod}</p>
         </div>
     `;
 
     // Use setTimeout to allow UI to update
-    setTimeout(() => {
+    setTimeout(async () => {
         try {
             console.log("🎵 Starting individual bird analysis...");
-            const estimates = estimateIndividualBirds(detections);
+            const estimates = await estimateIndividualBirds(detections);
             console.log("✅ Analysis complete:", estimates);
 
             renderIndividualBirdsResults(estimates);
