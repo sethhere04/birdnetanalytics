@@ -879,6 +879,229 @@ function checkForRareSpecies(analytics) {
     }
 }
 
+/**
+ * Audio playback functions - exposed globally for inline onclick handlers
+ */
+
+// Store currently playing audio
+let currentDetectionAudio = null;
+let currentDetectionButton = null;
+
+window.playDetectionAudio = function(audioUrl, button) {
+    // Stop currently playing audio
+    if (currentDetectionAudio) {
+        currentDetectionAudio.pause();
+        currentDetectionAudio.currentTime = 0;
+        if (currentDetectionButton) {
+            currentDetectionButton.textContent = '▶';
+            currentDetectionButton.classList.remove('playing');
+        }
+    }
+
+    // If clicking the same button, just stop
+    if (currentDetectionButton === button && currentDetectionAudio) {
+        currentDetectionAudio = null;
+        currentDetectionButton = null;
+        return;
+    }
+
+    // Create and play new audio
+    const audio = new Audio(audioUrl);
+    currentDetectionAudio = audio;
+    currentDetectionButton = button;
+
+    button.textContent = '⏸';
+    button.classList.add('playing');
+
+    audio.play().catch(error => {
+        console.error('Error playing audio:', error);
+        button.textContent = '❌';
+        setTimeout(() => {
+            button.textContent = '▶';
+            button.classList.remove('playing');
+        }, 2000);
+    });
+
+    audio.addEventListener('ended', () => {
+        button.textContent = '▶';
+        button.classList.remove('playing');
+        currentDetectionAudio = null;
+        currentDetectionButton = null;
+    });
+
+    audio.addEventListener('error', (e) => {
+        console.error('Audio load error:', e);
+        button.textContent = '❌';
+        setTimeout(() => {
+            button.textContent = '▶';
+            button.classList.remove('playing');
+        }, 2000);
+        currentDetectionAudio = null;
+        currentDetectionButton = null;
+    });
+};
+
+window.showSpectrogram = async function(audioUrl, speciesName, button) {
+    const modal = document.getElementById('spectrogram-modal');
+    const title = document.getElementById('spectrogram-title');
+    const canvas = document.getElementById('spectrogram-canvas');
+    const audio = document.getElementById('spectrogram-audio');
+
+    if (!modal || !canvas || !audio) return;
+
+    title.textContent = `Spectrogram - ${speciesName}`;
+    audio.src = audioUrl;
+    modal.style.display = 'flex';
+
+    // Show loading state
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Loading audio...', canvas.width / 2, canvas.height / 2);
+
+    try {
+        // Fetch and decode audio
+        const response = await fetch(audioUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+        // Generate spectrogram
+        drawSpectrogram(canvas, audioBuffer);
+    } catch (error) {
+        console.error('Error generating spectrogram:', error);
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff6b6b';
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Error loading audio', canvas.width / 2, canvas.height / 2);
+    }
+};
+
+window.closeSpectrogramModal = function() {
+    const modal = document.getElementById('spectrogram-modal');
+    const audio = document.getElementById('spectrogram-audio');
+    if (modal) modal.style.display = 'none';
+    if (audio) {
+        audio.pause();
+        audio.src = '';
+    }
+};
+
+window.downloadAudio = async function(audioUrl, filename) {
+    try {
+        const response = await fetch(audioUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.mp3`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error('Error downloading audio:', error);
+        alert('Failed to download audio. The recording may not be available.');
+    }
+};
+
+/**
+ * Draw spectrogram on canvas from audio buffer
+ */
+function drawSpectrogram(canvas, audioBuffer) {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const channelData = audioBuffer.getChannelData(0);
+    const sampleRate = audioBuffer.sampleRate;
+
+    // FFT parameters
+    const fftSize = 2048;
+    const hopSize = 512;
+    const numFrames = Math.floor((channelData.length - fftSize) / hopSize);
+
+    // Clear canvas
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, width, height);
+
+    // Calculate spectrogram
+    const freqBins = fftSize / 2;
+    const imageData = ctx.createImageData(width, height);
+
+    for (let frame = 0; frame < numFrames; frame++) {
+        const x = Math.floor((frame / numFrames) * width);
+        if (x >= width) break;
+
+        const start = frame * hopSize;
+        const window = channelData.slice(start, start + fftSize);
+
+        // Apply Hamming window
+        for (let i = 0; i < window.length; i++) {
+            window[i] *= 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (window.length - 1));
+        }
+
+        // Simple magnitude calculation (not true FFT, but fast approximation)
+        const magnitudes = new Array(height).fill(0);
+        for (let freq = 0; freq < height; freq++) {
+            let sum = 0;
+            const binSize = Math.max(1, Math.floor(window.length / height));
+            for (let i = 0; i < binSize; i++) {
+                const idx = freq * binSize + i;
+                if (idx < window.length) {
+                    sum += Math.abs(window[idx]);
+                }
+            }
+            magnitudes[freq] = sum / binSize;
+        }
+
+        // Normalize and draw
+        const maxMag = Math.max(...magnitudes);
+        for (let y = 0; y < height; y++) {
+            const magnitude = magnitudes[height - y - 1] / maxMag;
+            const pixelIndex = (y * width + x) * 4;
+
+            // Color mapping (blue -> green -> yellow -> red)
+            const intensity = Math.pow(magnitude, 0.5) * 255;
+            if (intensity < 64) {
+                imageData.data[pixelIndex] = 0;
+                imageData.data[pixelIndex + 1] = 0;
+                imageData.data[pixelIndex + 2] = intensity * 4;
+            } else if (intensity < 128) {
+                imageData.data[pixelIndex] = 0;
+                imageData.data[pixelIndex + 1] = (intensity - 64) * 4;
+                imageData.data[pixelIndex + 2] = 255;
+            } else if (intensity < 192) {
+                imageData.data[pixelIndex] = (intensity - 128) * 4;
+                imageData.data[pixelIndex + 1] = 255;
+                imageData.data[pixelIndex + 2] = 255 - (intensity - 128) * 4;
+            } else {
+                imageData.data[pixelIndex] = 255;
+                imageData.data[pixelIndex + 1] = 255 - (intensity - 192) * 4;
+                imageData.data[pixelIndex + 2] = 0;
+            }
+            imageData.data[pixelIndex + 3] = 255;
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Add labels
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px monospace';
+    ctx.fillText('Time →', width - 50, height - 5);
+    ctx.save();
+    ctx.translate(10, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Frequency →', 0, 0);
+    ctx.restore();
+}
+
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

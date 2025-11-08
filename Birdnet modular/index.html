@@ -224,11 +224,12 @@
                                         <th>Date</th>
                                         <th>Time</th>
                                         <th>Confidence</th>
+                                        <th>Audio</th>
                                     </tr>
                                 </thead>
                                 <tbody id="recent-detections-tbody">
                                     <tr>
-                                        <td colspan="4">
+                                        <td colspan="5">
                                             <div class="loading">
                                                 <div class="spinner"></div>
                                                 <p>Loading recent detections...</p>
@@ -921,6 +922,22 @@
 
     <!-- Error Container -->
     <div id="error-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 400px;"></div>
+
+    <!-- Spectrogram Modal -->
+    <div id="spectrogram-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2 id="spectrogram-title">Spectrogram</h2>
+                <button class="modal-close" onclick="window.closeSpectrogramModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <canvas id="spectrogram-canvas" width="800" height="400" style="width: 100%; background: #1a1a1a;"></canvas>
+                <div style="margin-top: 1rem;">
+                    <audio id="spectrogram-audio" controls style="width: 100%;"></audio>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Application Scripts - ES6 Modules -->
     <script type="module" src="js/main.js?v=2024103102"></script>

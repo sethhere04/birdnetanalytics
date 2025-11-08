@@ -6,7 +6,7 @@ import * as charts from './charts.js';
 import { getTodayActiveSpecies, getDiversityMetrics, calculateComparisonStats, getSpeciesForPeriod, calculateYearOverYear, calculateSpeciesStreaks, calculateRarityScores, detectActivityAnomalies, getMissingSpeciesAlerts, predictBestWatchTimes } from './analytics.js';
 import { getCurrentSeason, getSeasonalRecommendations, getSpeciesFeedingData, getFeedingDataForSpecies } from './feeding.js';
 import { analyzeMigrationPatterns } from './migration.js';
-import { parseDetectionDate } from './api.js';
+import { parseDetectionDate, API_CONFIG } from './api.js';
 import { estimateIndividualBirds } from './audio-analysis.js';
 import * as AudioPlayer from './audio-player.js';
 
@@ -163,7 +163,7 @@ export function renderRecentDetectionsTable(detections, speciesData, limit = 10)
     const recentDetections = sortedDetections.slice(0, limit);
 
     if (recentDetections.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">🦜</div><p>No detections yet</p></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🦜</div><p>No detections yet</p></div></td></tr>';
         return;
     }
 
@@ -172,6 +172,7 @@ export function renderRecentDetectionsTable(detections, speciesData, limit = 10)
         const scientificName = detection.scientificName || detection.scientific_name || '';
         const confidence = detection.confidence || 0;
         const thumbnail = getSpeciesImageUrl(speciesName);
+        const detectionId = detection.id || detection.detectionId;
 
         // Parse date and time
         const detectionDate = parseDetectionDate(detection);
@@ -182,6 +183,16 @@ export function renderRecentDetectionsTable(detections, speciesData, limit = 10)
         let confidenceClass = 'confidence-low';
         if (confidence >= 0.8) confidenceClass = 'confidence-high';
         else if (confidence >= 0.5) confidenceClass = 'confidence-medium';
+
+        // Audio controls
+        const audioUrl = detectionId ? `${API_CONFIG.audioBaseUrl}/${detectionId}` : null;
+        const audioControls = audioUrl ? `
+            <div class="audio-controls" onclick="event.stopPropagation()">
+                <button class="audio-btn" onclick="window.playDetectionAudio('${audioUrl}', this)" title="Play audio">▶</button>
+                <button class="audio-btn spectro-btn" onclick="window.showSpectrogram('${audioUrl}', '${speciesName.replace(/'/g, "\\'")}', this)" title="View spectrogram">📊</button>
+                <button class="audio-btn download-btn" onclick="window.downloadAudio('${audioUrl}', '${speciesName.replace(/'/g, "\\'")}_${detectionDate.getTime()}')" title="Download audio">⬇️</button>
+            </div>
+        ` : '<span style="color: #999; font-size: 0.875rem;">No audio</span>';
 
         return `
             <tr onclick="window.showSpeciesDetail('${speciesName.replace(/'/g, "\\'")}')">
@@ -204,6 +215,7 @@ export function renderRecentDetectionsTable(detections, speciesData, limit = 10)
                         ${(confidence * 100).toFixed(0)}%
                     </span>
                 </td>
+                <td>${audioControls}</td>
             </tr>
         `;
     }).join('');
